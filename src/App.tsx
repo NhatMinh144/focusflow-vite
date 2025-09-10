@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // FocusFlow — a single-file React app (React + Tailwind)
 // Two tabs: Focus Timer & Daily Checklist
@@ -107,7 +107,7 @@ function FocusTimer() {
         return r - 1;
       });
     }, 1000);
-    return () => intervalRef.current && window.clearInterval(intervalRef.current);
+    return () => { if (intervalRef.current) window.clearInterval(intervalRef.current); };
   }, [running]);
 
   // Wake Lock (keep screen awake) — safe wrapper
@@ -126,10 +126,7 @@ function FocusTimer() {
         setWakeLockActive(false);
       }
     };
-    const disable = async () => {
-      try { await wakeRef.current?.release?.(); } catch {}
-      setWakeLockActive(false);
-    };
+    const disable = () => { try { void wakeRef.current?.release?.(); } catch {} setWakeLockActive(false); };
     if (running) enable(); else disable();
     return () => disable();
   }, [running]);
