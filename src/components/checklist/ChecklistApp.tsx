@@ -17,16 +17,18 @@ export function ChecklistApp({ user, view, setView }: Props) {
 
   const {
     tasks,
-    monthSummary,
+    monthTasks,
     loading,
     fetchDayTasks,
-    fetchMonthSummary,
+    fetchMonthTasks,
     addTask,
     toggleTask,
     deleteTask,
     addSubtask,
     toggleSubtask,
     deleteSubtask,
+    moveTask,
+    toggleMonthTask,
   } = useTasks(user.id)
 
   useEffect(() => {
@@ -34,8 +36,8 @@ export function ChecklistApp({ user, view, setView }: Props) {
   }, [view, date, fetchDayTasks])
 
   useEffect(() => {
-    if (view === 'monthly') fetchMonthSummary(calYear, calMonth)
-  }, [view, calYear, calMonth, fetchMonthSummary])
+    if (view === 'monthly') fetchMonthTasks(calYear, calMonth)
+  }, [view, calYear, calMonth, fetchMonthTasks])
 
   function handleSelectDay(selectedDate: string) {
     setDate(selectedDate)
@@ -48,7 +50,7 @@ export function ChecklistApp({ user, view, setView }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-4 md:p-8">
+    <main className="mx-auto max-w-5xl p-4 md:p-8">
       {view === 'daily' ? (
         <DailyView
           date={date}
@@ -66,9 +68,11 @@ export function ChecklistApp({ user, view, setView }: Props) {
         <MonthlyView
           year={calYear}
           month={calMonth}
-          summaries={monthSummary}
+          monthTasks={monthTasks}
           onNavigate={handleNavigate}
           onSelectDay={handleSelectDay}
+          onMoveTask={moveTask}
+          onToggleTask={toggleMonthTask}
         />
       )}
     </main>

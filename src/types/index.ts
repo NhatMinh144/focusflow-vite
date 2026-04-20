@@ -21,3 +21,10 @@ export interface TaskSummary {
   total: number
   done: number
 }
+
+export interface MonthTask {
+  id: string
+  text: string
+  date: string
+  done: boolean
+}

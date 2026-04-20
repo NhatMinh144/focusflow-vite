@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Subtask, Task, TaskSummary } from '../types'
+import type { MonthTask, Subtask, Task, TaskSummary } from '../types'
 
 export function useTasks(userId: string) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [monthSummary, setMonthSummary] = useState<TaskSummary[]>([])
+  const [monthTasks, setMonthTasks] = useState<MonthTask[]>([])
   const [loading, setLoading] = useState(false)
 
   const fetchDayTasks = useCallback(async (date: string) => {
@@ -52,6 +53,35 @@ export function useTasks(userId: string) {
         Array.from(map.entries()).map(([date, { total, done }]) => ({ date, total, done })),
       )
     }
+  }, [])
+
+  const fetchMonthTasks = useCallback(async (year: number, month: number) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const start = `${year}-${pad(month)}-01`
+    const end = `${year}-${pad(month)}-${pad(new Date(year, month, 0).getDate())}`
+
+    const { data } = await supabase
+      .from('tasks')
+      .select('id, text, date, done')
+      .gte('date', start)
+      .lte('date', end)
+      .order('created_at', { ascending: true })
+
+    if (data) setMonthTasks(data as MonthTask[])
+  }, [])
+
+  const moveTask = useCallback(async (taskId: string, newDate: string) => {
+    setMonthTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, date: newDate } : t)),
+    )
+    await supabase.from('tasks').update({ date: newDate }).eq('id', taskId)
+  }, [])
+
+  const toggleMonthTask = useCallback(async (taskId: string, done: boolean) => {
+    setMonthTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, done } : t)),
+    )
+    await supabase.from('tasks').update({ done }).eq('id', taskId)
   }, [])
 
   const addTask = useCallback(
@@ -108,14 +138,18 @@ export function useTasks(userId: string) {
   return {
     tasks,
     monthSummary,
+    monthTasks,
     loading,
     fetchDayTasks,
     fetchMonthSummary,
+    fetchMonthTasks,
     addTask,
     toggleTask,
     deleteTask,
     addSubtask,
     toggleSubtask,
     deleteSubtask,
+    moveTask,
+    toggleMonthTask,
   }
 }
