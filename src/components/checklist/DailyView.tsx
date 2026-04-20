@@ -83,12 +83,18 @@ export function DailyView({
       {/* Add task input */}
       <div className="flex gap-2 mb-5">
         <input
-          autoFocus
           className="flex-1 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
           placeholder="Add a task and press Enter…"
           value={input}
+          autoComplete="off"
+          spellCheck={false}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addTask()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              addTask()
+            }
+          }}
         />
         <button
           onClick={addTask}

@@ -37,7 +37,6 @@ export function TaskItem({
 
   function toggleExpanded() {
     setExpanded((e) => !e)
-    if (!expanded) setTimeout(() => inputRef.current?.focus(), 80)
   }
 
   return (
@@ -129,8 +128,15 @@ export function TaskItem({
             <input
               ref={inputRef}
               value={subtaskInput}
+              autoComplete="off"
+              spellCheck={false}
               onChange={(e) => setSubtaskInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddSubtask()
+                }
+              }}
               placeholder="Add a subtask…"
               className="flex-1 text-sm rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
             />
