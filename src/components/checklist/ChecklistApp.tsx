@@ -27,6 +27,8 @@ export function ChecklistApp({ user, view, setView }: Props) {
     addSubtask,
     toggleSubtask,
     deleteSubtask,
+    updateTaskNotes,
+    updateSubtaskNotes,
     moveTask,
     toggleMonthTask,
   } = useTasks(user.id)
@@ -63,6 +65,8 @@ export function ChecklistApp({ user, view, setView }: Props) {
           onAddSubtask={addSubtask}
           onToggleSubtask={toggleSubtask}
           onDeleteSubtask={deleteSubtask}
+          onUpdateTaskNotes={updateTaskNotes}
+          onUpdateSubtaskNotes={updateSubtaskNotes}
         />
       ) : (
         <MonthlyView

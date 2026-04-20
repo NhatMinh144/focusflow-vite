@@ -135,6 +135,25 @@ export function useTasks(userId: string) {
     await supabase.from('subtasks').delete().eq('id', subtaskId)
   }, [])
 
+  const updateTaskNotes = useCallback(async (taskId: string, notes: string) => {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, notes } : t)))
+    await supabase.from('tasks').update({ notes }).eq('id', taskId)
+  }, [])
+
+  const updateSubtaskNotes = useCallback(
+    async (taskId: string, subtaskId: string, notes: string) => {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, notes } : s)) }
+            : t,
+        ),
+      )
+      await supabase.from('subtasks').update({ notes }).eq('id', subtaskId)
+    },
+    [],
+  )
+
   return {
     tasks,
     monthSummary,
@@ -149,6 +168,8 @@ export function useTasks(userId: string) {
     addSubtask,
     toggleSubtask,
     deleteSubtask,
+    updateTaskNotes,
+    updateSubtaskNotes,
     moveTask,
     toggleMonthTask,
   }

@@ -13,6 +13,8 @@ interface Props {
   onAddSubtask: (taskId: string, text: string, date: string) => void
   onToggleSubtask: (taskId: string, subtaskId: string, done: boolean) => void
   onDeleteSubtask: (taskId: string, subtaskId: string) => void
+  onUpdateTaskNotes: (taskId: string, notes: string) => void
+  onUpdateSubtaskNotes: (taskId: string, subtaskId: string, notes: string) => void
 }
 
 export function DailyView({
@@ -26,6 +28,8 @@ export function DailyView({
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
+  onUpdateTaskNotes,
+  onUpdateSubtaskNotes,
 }: Props) {
   const [input, setInput] = useState('')
 
@@ -123,6 +127,8 @@ export function DailyView({
               onAddSubtask={onAddSubtask}
               onToggleSubtask={onToggleSubtask}
               onDeleteSubtask={onDeleteSubtask}
+              onUpdateNotes={onUpdateTaskNotes}
+              onUpdateSubtaskNotes={onUpdateSubtaskNotes}
             />
           ))}
         </ul>

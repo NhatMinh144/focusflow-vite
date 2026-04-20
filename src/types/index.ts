@@ -3,6 +3,7 @@ export interface Subtask {
   task_id: string
   text: string
   done: boolean
+  notes: string
   created_at: string
 }
 
@@ -12,6 +13,7 @@ export interface Task {
   text: string
   date: string
   done: boolean
+  notes: string
   created_at: string
   subtasks: Subtask[]
 }
