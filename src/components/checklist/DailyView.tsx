@@ -81,7 +81,13 @@ export function DailyView({
       </div>
 
       {/* Add task input */}
-      <div className="flex gap-2 mb-5">
+      <form
+        className="flex gap-2 mb-5"
+        onSubmit={(e) => {
+          e.preventDefault()
+          addTask()
+        }}
+      >
         <input
           className="flex-1 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
           placeholder="Add a task and press Enter…"
@@ -89,20 +95,14 @@ export function DailyView({
           autoComplete="off"
           spellCheck={false}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              addTask()
-            }
-          }}
         />
         <button
-          onClick={addTask}
+          type="submit"
           className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm hover:opacity-90 transition"
         >
           Add
         </button>
-      </div>
+      </form>
 
       {/* Task list */}
       {loading ? (

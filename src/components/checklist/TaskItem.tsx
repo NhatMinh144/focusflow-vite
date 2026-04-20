@@ -124,29 +124,29 @@ export function TaskItem({
             <p className="text-xs text-zinc-400 mb-2">No subtasks yet.</p>
           )}
 
-          <div className="flex gap-2">
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleAddSubtask()
+            }}
+          >
             <input
               ref={inputRef}
               value={subtaskInput}
               autoComplete="off"
               spellCheck={false}
               onChange={(e) => setSubtaskInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleAddSubtask()
-                }
-              }}
               placeholder="Add a subtask…"
               className="flex-1 text-sm rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
             />
             <button
-              onClick={handleAddSubtask}
+              type="submit"
               className="text-xs px-3 py-1.5 rounded-lg bg-zinc-900 text-white hover:opacity-90 transition"
             >
               Add
             </button>
-          </div>
+          </form>
         </div>
       )}
     </li>
