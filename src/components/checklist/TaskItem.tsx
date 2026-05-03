@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Checkbox, Chip, Form, TextArea, TextField } from '@heroui/react'
+import { Button, Checkbox, Chip, Form, TextArea } from '@heroui/react'
 import type { Task } from '../../types'
 
 interface Props {
@@ -125,7 +125,7 @@ export function TaskItem({
           <TextArea
             aria-label="Task notes"
             value={taskNotes}
-            onChange={(v) => setTaskNotes(v)}
+            onChange={(e) => setTaskNotes(e.target.value)}
             onBlur={() => onUpdateNotes(task.id, taskNotes)}
             placeholder="Add notes for this task…"
             rows={3}
@@ -146,7 +146,6 @@ export function TaskItem({
                       isSelected={sub.done}
                       onChange={(isSelected) => onToggleSubtask(task.id, sub.id, isSelected)}
                       aria-label={sub.text}
-                      size="sm"
                       className="shrink-0"
                     />
                     <span
@@ -194,7 +193,7 @@ export function TaskItem({
                       <TextArea
                         aria-label="Subtask notes"
                         value={subNotes[sub.id] ?? ''}
-                        onChange={(v) => setSubNotes((prev) => ({ ...prev, [sub.id]: v }))}
+                        onChange={(e) => setSubNotes((prev) => ({ ...prev, [sub.id]: e.target.value }))}
                         onBlur={() =>
                           onUpdateSubtaskNotes(task.id, sub.id, subNotes[sub.id] ?? '')
                         }
@@ -219,13 +218,13 @@ export function TaskItem({
               handleAddSubtask()
             }}
           >
-            <TextField
+            <input
               aria-label="New subtask"
               value={subtaskInput}
-              onChange={setSubtaskInput}
+              onChange={(e) => setSubtaskInput(e.target.value)}
               autoComplete="off"
               placeholder="Add a subtask…"
-              className="flex-1"
+              className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
             />
             <Button type="submit" variant="primary" size="sm">
               Add

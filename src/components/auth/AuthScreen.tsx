@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AuthError } from '@supabase/supabase-js'
-import { Alert, Button, Card, Form, TextField } from '@heroui/react'
+import { Alert, Button, Card, Form } from '@heroui/react'
 
 interface Props {
   onSignIn: (email: string, password: string) => Promise<AuthError | null>
@@ -74,27 +74,31 @@ export function AuthScreen({ onSignIn, onSignUp }: Props) {
 
           {/* Auth form */}
           <Form onSubmit={handleSubmit} className="grid gap-4">
-            <TextField
-              label="Email"
-              type="email"
-              isRequired
-              autoComplete="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="you@example.com"
-              className="w-full"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-zinc-700">Email</label>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 w-full"
+              />
+            </div>
 
-            <TextField
-              label="Password"
-              type="password"
-              isRequired
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={setPassword}
-              placeholder="••••••••"
-              className="w-full"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-zinc-700">Password</label>
+              <input
+                type="password"
+                required
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 w-full"
+              />
+            </div>
 
             {error && (
               <Alert status="danger">
@@ -116,7 +120,7 @@ export function AuthScreen({ onSignIn, onSignUp }: Props) {
             <Button
               type="submit"
               variant="primary"
-              isLoading={loading}
+              isDisabled={loading}
               className="w-full mt-1"
             >
               {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}

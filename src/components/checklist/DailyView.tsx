@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Form, Spinner, TextField } from '@heroui/react'
+import { Button, Card, Form, Spinner } from '@heroui/react'
 import { TaskItem } from './TaskItem'
 import type { Task } from '../../types'
 
@@ -91,13 +91,13 @@ export function DailyView({
           addTask()
         }}
       >
-        <TextField
+        <input
           aria-label="New task"
           placeholder="Add a task and press Enter…"
           value={input}
-          onChange={setInput}
+          onChange={(e) => setInput(e.target.value)}
           autoComplete="off"
-          className="flex-1"
+          className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
         />
         <Button type="submit" variant="primary">
           Add
