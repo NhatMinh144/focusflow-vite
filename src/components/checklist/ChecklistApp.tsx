@@ -54,7 +54,7 @@ export function ChecklistApp({ user, view, setView }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-4 md:p-8">
+    <main className="mx-auto max-w-5xl px-3 py-4 sm:px-4 md:px-8 md:py-8">
       {view === 'daily' ? (
         <DailyView
           date={date}

@@ -137,7 +137,7 @@ export function NotePopover({ notes, onSave, placeholder = 'Add a note…' }: Pr
               ref={refs.setFloating}
               style={floatingStyles}
               {...getFloatingProps()}
-              className="z-50 w-72 rounded-xl border border-zinc-200 bg-white p-3 shadow-lg outline-none"
+              className="z-50 w-[calc(100vw-2rem)] sm:w-72 rounded-xl border border-zinc-200 bg-white p-3 shadow-lg outline-none"
             >
               {/* Header row */}
               <div className="mb-2 flex items-center justify-between">

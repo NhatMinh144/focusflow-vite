@@ -41,7 +41,8 @@ export function DailyView({
   const today = new Date().toISOString().slice(0, 10)
   const isToday = date === today
   const done = tasks.filter((t) => t.done).length
-  const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0
+  const total = tasks.length
+  const pct = total ? Math.round((done / total) * 100) : 0
 
   function addTask() {
     const text = input.trim()
@@ -59,84 +60,115 @@ export function DailyView({
       })
 
   return (
-    <Card className="rounded-2xl shadow-sm">
-      <Card.Content className="p-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
-        <div>
-          <h2 className="text-lg font-semibold">{displayDate}</h2>
-          {tasks.length > 0 && (
-            <p className="text-xs text-muted mt-0.5">
-              {done}/{tasks.length} done — {pct}%
-            </p>
+    <div className="flex flex-col gap-3">
+      <Card className="rounded-2xl shadow-sm">
+        <Card.Content className="p-4 sm:p-6">
+
+          {/* ── Header ── */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold truncate">{displayDate}</h2>
+              {total > 0 && (
+                <p className="text-xs text-zinc-400 mt-0.5">{done}/{total} done — {pct}%</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {!isToday && (
+                <Button variant="ghost" size="sm" onPress={() => setDate(today)}>
+                  Today
+                </Button>
+              )}
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              />
+            </div>
+          </div>
+
+          {/* ── Progress bar (only when tasks exist) ── */}
+          {total > 0 && (
+            <div className="mb-4 h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-zinc-900 transition-all duration-300"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          {!isToday && (
-            <Button variant="ghost" size="sm" onPress={() => setDate(today)}>
-              Go to today
-            </Button>
+
+          {/* ── Add task form — hidden on mobile (sticky bar below handles it) ── */}
+          <Form
+            className="hidden sm:flex gap-2 mb-4"
+            onSubmit={(e) => { e.preventDefault(); addTask() }}
+          >
+            <input
+              aria-label="New task"
+              placeholder="Add a task and press Enter…"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              autoComplete="off"
+              className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+            <Button type="submit" variant="primary">Add</Button>
+          </Form>
+
+          {/* ── Task list ── */}
+          {loading ? (
+            <div className="py-12 flex justify-center">
+              <Spinner color="current" />
+            </div>
+          ) : total === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-200 py-12 text-center">
+              <p className="text-sm text-zinc-400">No tasks yet.</p>
+              <p className="text-xs text-zinc-300 mt-1">Add one below ↓</p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {tasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onToggle={onToggleTask}
+                  onDelete={onDeleteTask}
+                  onAddSubtask={onAddSubtask}
+                  onToggleSubtask={onToggleSubtask}
+                  onDeleteSubtask={onDeleteSubtask}
+                  onUpdateNotes={onUpdateTaskNotes}
+                  onUpdateSubtaskNotes={onUpdateSubtaskNotes}
+                  onUpdateText={onUpdateTaskText}
+                  onUpdateSubtaskText={onUpdateSubtaskText}
+                />
+              ))}
+            </ul>
           )}
-          {/* Keep native date input — HeroUI DateField uses a different paradigm */}
+
+        </Card.Content>
+      </Card>
+
+      {/* ── Mobile sticky add-task bar ── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-zinc-200 bg-white/95 backdrop-blur px-4 py-3 safe-area-pb">
+        <Form
+          className="flex gap-2"
+          onSubmit={(e) => { e.preventDefault(); addTask() }}
+        >
           <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+            aria-label="New task"
+            placeholder="Add a task…"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            autoComplete="off"
+            /* text-[16px] prevents iOS Safari from zooming on focus */
+            className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:bg-white"
           />
-        </div>
+          <Button type="submit" variant="primary" className="shrink-0 px-5 py-3 rounded-xl">
+            Add
+          </Button>
+        </Form>
       </div>
 
-      {/* Add task form */}
-      <Form
-        className="flex gap-2 mb-5"
-        onSubmit={(e) => {
-          e.preventDefault()
-          addTask()
-        }}
-      >
-        <input
-          aria-label="New task"
-          placeholder="Add a task and press Enter…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          autoComplete="off"
-          className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
-        />
-        <Button type="submit" variant="primary">
-          Add
-        </Button>
-      </Form>
-
-      {/* Task list */}
-      {loading ? (
-        <div className="py-10 flex justify-center">
-          <Spinner color="current" />
-        </div>
-      ) : tasks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-200 py-10 text-center text-sm text-muted">
-          No tasks for this day. Add one above.
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {tasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onToggle={onToggleTask}
-              onDelete={onDeleteTask}
-              onAddSubtask={onAddSubtask}
-              onToggleSubtask={onToggleSubtask}
-              onDeleteSubtask={onDeleteSubtask}
-              onUpdateNotes={onUpdateTaskNotes}
-              onUpdateSubtaskNotes={onUpdateSubtaskNotes}
-              onUpdateText={onUpdateTaskText}
-              onUpdateSubtaskText={onUpdateSubtaskText}
-            />
-          ))}
-        </ul>
-      )}
-      </Card.Content>
-    </Card>
+      {/* Spacer so tasks aren't hidden behind the sticky bar on mobile */}
+      <div className="h-20 sm:hidden" />
+    </div>
   )
 }

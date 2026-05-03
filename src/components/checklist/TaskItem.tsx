@@ -45,7 +45,6 @@ function InlineEdit({
   function startEdit() {
     setDraft(value)
     setEditing(true)
-    // Focus happens via autoFocus on the input
   }
 
   function save() {
@@ -71,7 +70,7 @@ function InlineEdit({
           if (e.key === 'Enter') { e.preventDefault(); save() }
           if (e.key === 'Escape') { e.preventDefault(); cancel() }
         }}
-        className={inputClassName ?? 'flex-1 min-w-0 rounded border border-zinc-300 px-1.5 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300'}
+        className={inputClassName ?? 'flex-1 min-w-0 rounded border border-zinc-300 px-2 py-1 text-base focus:outline-none focus:ring-2 focus:ring-zinc-300'}
       />
     )
   }
@@ -107,18 +106,18 @@ function MoreMenu({ onDelete }: { onDelete: () => void }) {
 
   return (
     <>
+      {/* Always visible on mobile, hover-reveal on desktop */}
       <button
         ref={refs.setReference}
         {...getReferenceProps()}
         type="button"
         aria-label="More options"
-        className="flex h-5 w-5 items-center justify-center rounded text-zinc-300 opacity-0 transition-all hover:text-zinc-600 group-hover/task:opacity-100"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:text-zinc-700 hover:bg-zinc-100 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover/task:opacity-100"
       >
-        {/* Three vertical dots */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
@@ -134,12 +133,12 @@ function MoreMenu({ onDelete }: { onDelete: () => void }) {
           ref={refs.setFloating}
           style={floatingStyles}
           {...getFloatingProps()}
-          className="z-50 min-w-[120px] rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+          className="z-50 min-w-[140px] rounded-xl border border-zinc-200 bg-white py-1 shadow-xl"
         >
           <button
             type="button"
             onClick={() => { setIsOpen(false); onDelete() }}
-            className="w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-50 transition-colors"
+            className="w-full px-4 py-3 text-left text-sm font-medium text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
           >
             Delete task
           </button>
@@ -169,7 +168,6 @@ export function TaskItem({
   const totalSubs = task.subtasks.length
   const hasSubtaskSection = totalSubs > 0 || addingSubtask
 
-  // Notes snippet preview (60 chars, italic, only when not done)
   const notesSnippet =
     task.notes?.trim().length > 0
       ? task.notes.trim().length > 60
@@ -194,29 +192,31 @@ export function TaskItem({
     <li className="group/task rounded-xl border border-zinc-200 bg-white overflow-hidden">
 
       {/* ── Main task row ── */}
-      <div className="flex items-start gap-2.5 px-3 py-3">
+      <div className="flex items-center gap-3 px-3 py-3.5 sm:items-start sm:py-3">
 
-        {/* Checkbox */}
-        <input
-          type="checkbox"
-          checked={task.done}
-          onChange={(e) => onToggle(task.id, e.target.checked)}
-          aria-label={task.text}
-          className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-zinc-900"
-        />
+        {/* Checkbox — larger tap target on mobile */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-auto sm:w-auto sm:mt-1">
+          <input
+            type="checkbox"
+            checked={task.done}
+            onChange={(e) => onToggle(task.id, e.target.checked)}
+            aria-label={task.text}
+            className="h-5 w-5 shrink-0 cursor-pointer rounded accent-zinc-900"
+          />
+        </div>
 
         {/* Task text + notes snippet */}
         <div className="flex-1 min-w-0">
           {task.done ? (
-            <span className="text-base leading-snug line-through text-muted font-normal">
+            <span className="text-base leading-snug line-through text-zinc-400 font-normal">
               {task.text}
             </span>
           ) : (
             <InlineEdit
               value={task.text}
               onSave={(text) => onUpdateText(task.id, text)}
-              className="cursor-text text-base leading-snug text-zinc-900 font-semibold hover:text-zinc-600 transition-colors"
-              inputClassName="w-full rounded border border-zinc-300 px-1.5 py-0.5 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              className="cursor-text text-base leading-snug text-zinc-900 font-semibold"
+              inputClassName="w-full rounded-lg border border-zinc-300 px-2 py-1 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-zinc-300"
             />
           )}
           {notesSnippet && !task.done && (
@@ -225,8 +225,7 @@ export function TaskItem({
         </div>
 
         {/* Right-side icons */}
-        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-          {/* Subtask count chip */}
+        <div className="flex items-center gap-0.5 shrink-0">
           {totalSubs > 0 && (
             <Chip
               variant="soft"
@@ -237,13 +236,14 @@ export function TaskItem({
             </Chip>
           )}
 
-          {/* Notes icon */}
-          <NotePopover
-            notes={task.notes ?? ''}
-            onSave={(notes) => onUpdateNotes(task.id, notes)}
-          />
+          {/* Note icon — wrapped in larger tap target */}
+          <div className="flex h-9 w-9 items-center justify-center sm:h-6 sm:w-6">
+            <NotePopover
+              notes={task.notes ?? ''}
+              onSave={(notes) => onUpdateNotes(task.id, notes)}
+            />
+          </div>
 
-          {/* Three-dot delete menu */}
           <MoreMenu onDelete={() => onDelete(task.id)} />
         </div>
       </div>
@@ -251,45 +251,51 @@ export function TaskItem({
       {/* ── Subtask section ── */}
       {hasSubtaskSection && (
         <div className="border-t border-zinc-100 bg-zinc-50/60 px-3 pb-3">
-          <ul className="pt-2 space-y-1.5">
+          <ul className="pt-2 space-y-0.5">
             {task.subtasks.map((sub) => (
-              <li key={sub.id} className="group/sub flex items-center gap-2 pl-6">
-                <input
-                  type="checkbox"
-                  checked={sub.done}
-                  onChange={(e) => onToggleSubtask(task.id, sub.id, e.target.checked)}
-                  aria-label={sub.text}
-                  className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded accent-zinc-700"
-                />
+              <li key={sub.id} className="group/sub flex items-center gap-2 py-1 pl-4">
+                {/* Subtask checkbox — larger tap area */}
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center sm:h-5 sm:w-5">
+                  <input
+                    type="checkbox"
+                    checked={sub.done}
+                    onChange={(e) => onToggleSubtask(task.id, sub.id, e.target.checked)}
+                    aria-label={sub.text}
+                    className="h-4 w-4 cursor-pointer rounded accent-zinc-700"
+                  />
+                </div>
+
                 {sub.done ? (
                   <span className="flex-1 text-sm line-through text-zinc-400">{sub.text}</span>
                 ) : (
                   <InlineEdit
                     value={sub.text}
                     onSave={(text) => onUpdateSubtaskText(task.id, sub.id, text)}
-                    className="flex-1 cursor-text text-sm text-zinc-600 hover:text-zinc-800 transition-colors"
-                    inputClassName="flex-1 min-w-0 rounded border border-zinc-300 px-1.5 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                    className="flex-1 cursor-text text-sm text-zinc-600"
+                    inputClassName="flex-1 min-w-0 rounded-lg border border-zinc-300 px-2 py-1 text-base focus:outline-none focus:ring-2 focus:ring-zinc-300"
                   />
                 )}
 
                 {/* Subtask note icon */}
-                <NotePopover
-                  notes={sub.notes ?? ''}
-                  onSave={(notes) => onUpdateSubtaskNotes(task.id, sub.id, notes)}
-                  placeholder="Add a note for this subtask…"
-                />
+                <div className="flex h-9 w-9 items-center justify-center sm:h-5 sm:w-5">
+                  <NotePopover
+                    notes={sub.notes ?? ''}
+                    onSave={(notes) => onUpdateSubtaskNotes(task.id, sub.id, notes)}
+                    placeholder="Add a note for this subtask…"
+                  />
+                </div>
 
-                {/* Subtask delete — hover reveal */}
+                {/* Subtask delete — always visible on mobile, hover on desktop */}
                 <button
                   type="button"
                   onClick={() => onDeleteSubtask(task.id, sub.id)}
                   aria-label="Delete subtask"
-                  className="flex h-4 w-4 items-center justify-center rounded text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover/sub:opacity-100"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-300 transition-colors hover:text-red-500 active:bg-red-50 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover/sub:opacity-100"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="11"
-                    height="11"
+                    width="13"
+                    height="13"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -309,7 +315,7 @@ export function TaskItem({
           {/* Add subtask form or button */}
           {addingSubtask ? (
             <Form
-              className="flex gap-2 mt-2.5 pl-6"
+              className="flex gap-2 mt-2 pl-2"
               onSubmit={(e) => { e.preventDefault(); handleAddSubtask() }}
             >
               <input
@@ -317,10 +323,10 @@ export function TaskItem({
                 onChange={(e) => setSubtaskInput(e.target.value)}
                 autoFocus
                 autoComplete="off"
-                placeholder="Add a subtask…"
+                placeholder="Subtask name…"
                 aria-label="New subtask"
                 onKeyDown={(e) => { if (e.key === 'Escape') cancelAddSubtask() }}
-                className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-zinc-300"
               />
               <Button type="submit" variant="primary" size="sm">Add</Button>
               <Button type="button" variant="ghost" size="sm" onPress={cancelAddSubtask}>
@@ -331,21 +337,21 @@ export function TaskItem({
             <button
               type="button"
               onClick={() => setAddingSubtask(true)}
-              className="mt-2 pl-6 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+              className="mt-1.5 ml-2 flex items-center gap-1 py-1.5 text-sm text-zinc-400 hover:text-zinc-600 active:text-zinc-800 transition-colors"
             >
-              + Add subtask
+              <span className="text-base leading-none">+</span> Add subtask
             </button>
           )}
         </div>
       )}
 
-      {/* ── Hover-reveal add subtask when none exist ── */}
+      {/* ── Add subtask prompt when no subtasks — always visible (no hover needed) ── */}
       {!hasSubtaskSection && (
-        <div className="px-3 pb-2 pl-11">
+        <div className="px-3 pb-2.5 pl-12">
           <button
             type="button"
             onClick={() => setAddingSubtask(true)}
-            className="text-xs text-zinc-300 hover:text-zinc-500 transition-colors opacity-0 group-hover/task:opacity-100"
+            className="flex items-center gap-1 py-1 text-xs text-zinc-300 hover:text-zinc-500 active:text-zinc-700 transition-colors sm:opacity-0 sm:group-hover/task:opacity-100"
           >
             + Add subtask
           </button>

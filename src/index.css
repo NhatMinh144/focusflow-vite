@@ -2,3 +2,14 @@
 @import "@heroui/styles";
 
 html, body, #root { height: 100%; }
+
+/* iOS safe area for sticky bottom bar */
+.safe-area-pb {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Prevent body scroll bounce from showing white gaps behind sticky bar */
+body {
+  background-color: #f4f4f5; /* zinc-100 */
+  overscroll-behavior-y: none;
+}

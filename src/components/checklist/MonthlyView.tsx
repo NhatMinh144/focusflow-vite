@@ -113,6 +113,7 @@ export function MonthlyView({
           const dayTasks = tasksByDate[ds] ?? []
           const visibleTasks = dayTasks.slice(0, MAX_VISIBLE)
           const overflow = dayTasks.length - MAX_VISIBLE
+          const doneTasks = dayTasks.filter((t) => t.done).length
 
           return (
             <div
@@ -121,11 +122,11 @@ export function MonthlyView({
               onDragLeave={() => setDragOverDate(null)}
               onDrop={(e) => handleDrop(e, ds)}
               className={
-                'min-h-[130px] p-1.5 flex flex-col gap-1 transition-colors ' +
+                'min-h-[80px] sm:min-h-[130px] p-1 sm:p-1.5 flex flex-col gap-1 transition-colors ' +
                 (isDragOver ? 'bg-blue-50' : 'bg-white')
               }
             >
-              {/* Day number */}
+              {/* Day number — tap to open */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -138,8 +139,26 @@ export function MonthlyView({
                 {day}
               </Button>
 
-              {/* Task pills — kept as draggable divs with native checkboxes */}
-              <div className="flex flex-col gap-0.5 flex-1">
+              {/* Mobile: dot indicators only */}
+              {dayTasks.length > 0 && (
+                <div className="flex sm:hidden flex-wrap gap-0.5 px-0.5">
+                  {dayTasks.slice(0, 6).map((task) => (
+                    <span
+                      key={task.id}
+                      className={
+                        'h-1.5 w-1.5 rounded-full ' +
+                        (task.done ? 'bg-zinc-300' : 'bg-zinc-800')
+                      }
+                    />
+                  ))}
+                  {dayTasks.length > 6 && (
+                    <span className="text-[9px] text-zinc-400 leading-none self-center">+{dayTasks.length - 6}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Desktop: full task pills */}
+              <div className="hidden sm:flex flex-col gap-0.5 flex-1">
                 {visibleTasks.map((task) => (
                   <div
                     key={task.id}
@@ -167,7 +186,6 @@ export function MonthlyView({
                     </span>
                   </div>
                 ))}
-
                 {overflow > 0 && (
                   <Button
                     variant="ghost"
@@ -180,9 +198,20 @@ export function MonthlyView({
                 )}
               </div>
 
+              {/* Mobile: task count summary */}
+              {dayTasks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onSelectDay(ds)}
+                  className="sm:hidden mt-auto text-[9px] text-zinc-400 text-left px-0.5"
+                >
+                  {doneTasks}/{dayTasks.length}
+                </button>
+              )}
+
               {isDragOver && (
                 <div className="rounded-md border-2 border-dashed border-blue-300 h-5 flex items-center justify-center">
-                  <span className="text-xs text-blue-400">Drop here</span>
+                  <span className="text-xs text-blue-400">Drop</span>
                 </div>
               )}
             </div>
@@ -191,10 +220,10 @@ export function MonthlyView({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-2.5 border-t border-zinc-100 text-xs text-muted flex items-center gap-4">
-        <span>Click a day to add tasks</span>
-        <span>·</span>
-        <span>Drag tasks to reschedule</span>
+      <div className="px-4 py-2.5 border-t border-zinc-100 text-xs text-zinc-400 flex items-center gap-3">
+        <span>Tap a day to add tasks</span>
+        <span className="hidden sm:inline">·</span>
+        <span className="hidden sm:inline">Drag tasks to reschedule</span>
       </div>
     </Card>
   )
