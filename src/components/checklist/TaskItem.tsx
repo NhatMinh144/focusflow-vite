@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, Checkbox, Chip, Form } from '@heroui/react'
+import { Button, Chip, Form } from '@heroui/react'
 import {
   autoUpdate,
   flip,
@@ -197,14 +197,13 @@ export function TaskItem({
       <div className="flex items-start gap-2.5 px-3 py-3">
 
         {/* Checkbox */}
-        <div className="mt-0.5 shrink-0">
-          <Checkbox
-            variant="primary"
-            isSelected={task.done}
-            onChange={(isSelected) => onToggle(task.id, isSelected)}
-            aria-label={task.text}
-          />
-        </div>
+        <input
+          type="checkbox"
+          checked={task.done}
+          onChange={(e) => onToggle(task.id, e.target.checked)}
+          aria-label={task.text}
+          className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-zinc-900"
+        />
 
         {/* Task text + notes snippet */}
         <div className="flex-1 min-w-0">
@@ -255,11 +254,12 @@ export function TaskItem({
           <ul className="pt-2 space-y-1.5">
             {task.subtasks.map((sub) => (
               <li key={sub.id} className="group/sub flex items-center gap-2 pl-6">
-                <Checkbox
-                  variant="primary"
-                  isSelected={sub.done}
-                  onChange={(isSelected) => onToggleSubtask(task.id, sub.id, isSelected)}
+                <input
+                  type="checkbox"
+                  checked={sub.done}
+                  onChange={(e) => onToggleSubtask(task.id, sub.id, e.target.checked)}
                   aria-label={sub.text}
+                  className="h-3.5 w-3.5 shrink-0 cursor-pointer rounded accent-zinc-700"
                 />
                 {sub.done ? (
                   <span className="flex-1 text-sm line-through text-zinc-400">{sub.text}</span>
