@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button, Card, Form, Spinner, TextField } from '@heroui/react'
 import { TaskItem } from './TaskItem'
 import type { Task } from '../../types'
 
@@ -35,7 +36,6 @@ export function DailyView({
 
   const today = new Date().toISOString().slice(0, 10)
   const isToday = date === today
-
   const done = tasks.filter((t) => t.done).length
   const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0
 
@@ -55,26 +55,25 @@ export function DailyView({
       })
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <Card className="rounded-2xl shadow-sm">
+      <Card.Content className="p-6">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
         <div>
           <h2 className="text-lg font-semibold">{displayDate}</h2>
           {tasks.length > 0 && (
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               {done}/{tasks.length} done — {pct}%
             </p>
           )}
         </div>
         <div className="flex items-center gap-2">
           {!isToday && (
-            <button
-              onClick={() => setDate(today)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition"
-            >
+            <Button variant="ghost" size="sm" onPress={() => setDate(today)}>
               Go to today
-            </button>
+            </Button>
           )}
+          {/* Keep native date input — HeroUI DateField uses a different paradigm */}
           <input
             type="date"
             value={date}
@@ -84,35 +83,34 @@ export function DailyView({
         </div>
       </div>
 
-      {/* Add task input */}
-      <form
+      {/* Add task form */}
+      <Form
         className="flex gap-2 mb-5"
         onSubmit={(e) => {
           e.preventDefault()
           addTask()
         }}
       >
-        <input
-          className="flex-1 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+        <TextField
+          aria-label="New task"
           placeholder="Add a task and press Enter…"
           value={input}
+          onChange={setInput}
           autoComplete="off"
-          spellCheck={false}
-          onChange={(e) => setInput(e.target.value)}
+          className="flex-1"
         />
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm hover:opacity-90 transition"
-        >
+        <Button type="submit" variant="primary">
           Add
-        </button>
-      </form>
+        </Button>
+      </Form>
 
       {/* Task list */}
       {loading ? (
-        <div className="py-10 text-center text-sm text-zinc-400">Loading…</div>
+        <div className="py-10 flex justify-center">
+          <Spinner color="current" />
+        </div>
       ) : tasks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-200 py-10 text-center text-sm text-zinc-400">
+        <div className="rounded-xl border border-dashed border-zinc-200 py-10 text-center text-sm text-muted">
           No tasks for this day. Add one above.
         </div>
       ) : (
@@ -133,6 +131,7 @@ export function DailyView({
           ))}
         </ul>
       )}
-    </div>
+      </Card.Content>
+    </Card>
   )
 }

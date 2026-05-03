@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Spinner } from '@heroui/react'
 import { useAuth } from './hooks/useAuth'
 import { AuthScreen } from './components/auth/AuthScreen'
 import { Header } from './components/layout/Header'
@@ -11,7 +12,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-100 grid place-items-center">
-        <span className="text-sm text-zinc-400">Loading…</span>
+        <Spinner color="current" />
       </div>
     )
   }

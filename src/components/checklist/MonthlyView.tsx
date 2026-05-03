@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button, Card } from '@heroui/react'
 import type { MonthTask } from '../../types'
 
 interface Props {
@@ -40,21 +41,10 @@ export function MonthlyView({
     year: 'numeric',
   })
 
-  function pad(n: number) {
-    return String(n).padStart(2, '0')
-  }
-
-  function dateStr(day: number) {
-    return `${year}-${pad(month)}-${pad(day)}`
-  }
-
-  function prev() {
-    month === 1 ? onNavigate(year - 1, 12) : onNavigate(year, month - 1)
-  }
-
-  function next() {
-    month === 12 ? onNavigate(year + 1, 1) : onNavigate(year, month + 1)
-  }
+  function pad(n: number) { return String(n).padStart(2, '0') }
+  function dateStr(day: number) { return `${year}-${pad(month)}-${pad(day)}` }
+  function prev() { month === 1 ? onNavigate(year - 1, 12) : onNavigate(year, month - 1) }
+  function next() { month === 12 ? onNavigate(year + 1, 1) : onNavigate(year, month + 1) }
 
   const tasksByDate = monthTasks.reduce<Record<string, MonthTask[]>>((acc, t) => {
     if (!acc[t.date]) acc[t.date] = []
@@ -79,48 +69,34 @@ export function MonthlyView({
     setDragOverDate(null)
     const taskId = e.dataTransfer.getData('taskId')
     const fromDate = e.dataTransfer.getData('fromDate')
-    if (taskId && fromDate !== ds) {
-      onMoveTask(taskId, ds)
-    }
+    if (taskId && fromDate !== ds) onMoveTask(taskId, ds)
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      {/* Header */}
+    <Card className="rounded-2xl shadow-sm overflow-hidden">
+      {/* Month navigation */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
         <h2 className="text-base font-semibold">{monthLabel}</h2>
         <div className="flex gap-1">
-          <button
-            onClick={prev}
-            className="px-3 py-1.5 text-sm rounded-lg bg-zinc-100 hover:bg-zinc-200 transition"
-          >
-            ←
-          </button>
-          <button
-            onClick={() => {
+          <Button variant="ghost" size="sm" onPress={prev}>←</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={() => {
               const now = new Date()
               onNavigate(now.getFullYear(), now.getMonth() + 1)
             }}
-            className="px-3 py-1.5 text-sm rounded-lg bg-zinc-100 hover:bg-zinc-200 transition"
           >
             Today
-          </button>
-          <button
-            onClick={next}
-            className="px-3 py-1.5 text-sm rounded-lg bg-zinc-100 hover:bg-zinc-200 transition"
-          >
-            →
-          </button>
+          </Button>
+          <Button variant="ghost" size="sm" onPress={next}>→</Button>
         </div>
       </div>
 
-      {/* Day-of-week row */}
+      {/* Day-of-week labels */}
       <div className="grid grid-cols-7 border-b border-zinc-100">
         {DOW.map((d) => (
-          <div
-            key={d}
-            className="py-2 text-center text-xs font-medium text-zinc-400"
-          >
+          <div key={d} className="py-2 text-center text-xs font-medium text-muted">
             {d}
           </div>
         ))}
@@ -129,9 +105,7 @@ export function MonthlyView({
       {/* Calendar grid */}
       <div className="grid grid-cols-7 divide-x divide-y divide-zinc-100">
         {cells.map((day, i) => {
-          if (!day) {
-            return <div key={`e-${i}`} className="min-h-[130px] bg-zinc-50/40" />
-          }
+          if (!day) return <div key={`e-${i}`} className="min-h-[130px] bg-zinc-50/40" />
 
           const ds = dateStr(day)
           const isToday = ds === today
@@ -152,23 +126,19 @@ export function MonthlyView({
               }
             >
               {/* Day number */}
-              <button
-                onClick={() => onSelectDay(ds)}
-                className="self-start"
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={() => onSelectDay(ds)}
+                className={
+                  'self-start h-6 w-6 min-w-0 rounded-full p-0 text-xs font-medium ' +
+                  (isToday ? 'bg-zinc-900 text-white hover:bg-zinc-800' : 'text-zinc-600')
+                }
               >
-                <span
-                  className={
-                    'flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition ' +
-                    (isToday
-                      ? 'bg-zinc-900 text-white'
-                      : 'text-zinc-600 hover:bg-zinc-100')
-                  }
-                >
-                  {day}
-                </span>
-              </button>
+                {day}
+              </Button>
 
-              {/* Task pills */}
+              {/* Task pills — kept as draggable divs with native checkboxes */}
               <div className="flex flex-col gap-0.5 flex-1">
                 {visibleTasks.map((task) => (
                   <div
@@ -183,10 +153,7 @@ export function MonthlyView({
                     <input
                       type="checkbox"
                       checked={task.done}
-                      onChange={(e) => {
-                        e.stopPropagation()
-                        onToggleTask(task.id, e.target.checked)
-                      }}
+                      onChange={(e) => { e.stopPropagation(); onToggleTask(task.id, e.target.checked) }}
                       onMouseDown={(e) => e.stopPropagation()}
                       className="h-2.5 w-2.5 shrink-0 cursor-pointer accent-zinc-500"
                     />
@@ -202,16 +169,17 @@ export function MonthlyView({
                 ))}
 
                 {overflow > 0 && (
-                  <button
-                    onClick={() => onSelectDay(ds)}
-                    className="text-left text-xs text-zinc-400 px-1.5 hover:text-zinc-600 transition"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => onSelectDay(ds)}
+                    className="text-xs text-muted px-1.5 h-auto justify-start hover:text-zinc-600"
                   >
                     +{overflow} more
-                  </button>
+                  </Button>
                 )}
               </div>
 
-              {/* Drop hint */}
               {isDragOver && (
                 <div className="rounded-md border-2 border-dashed border-blue-300 h-5 flex items-center justify-center">
                   <span className="text-xs text-blue-400">Drop here</span>
@@ -222,12 +190,12 @@ export function MonthlyView({
         })}
       </div>
 
-      {/* Footer hint */}
-      <div className="px-5 py-2.5 border-t border-zinc-100 text-xs text-zinc-400 flex items-center gap-4">
-        <span>Click a day number to add tasks</span>
+      {/* Footer */}
+      <div className="px-5 py-2.5 border-t border-zinc-100 text-xs text-muted flex items-center gap-4">
+        <span>Click a day to add tasks</span>
         <span>·</span>
         <span>Drag tasks to reschedule</span>
       </div>
-    </div>
+    </Card>
   )
 }

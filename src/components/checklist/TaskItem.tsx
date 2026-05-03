@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Button, Checkbox, Chip, Form, TextArea, TextField } from '@heroui/react'
 import type { Task } from '../../types'
 
 interface Props {
@@ -28,23 +29,15 @@ export function TaskItem({
   const [subtaskInput, setSubtaskInput] = useState('')
   const [taskNotesOpen, setTaskNotesOpen] = useState(false)
   const [taskNotes, setTaskNotes] = useState(task.notes ?? '')
-  // Map of subtask id → notes open state
   const [subNotesOpen, setSubNotesOpen] = useState<Record<string, boolean>>({})
-  // Map of subtask id → notes value
   const [subNotes, setSubNotes] = useState<Record<string, string>>(() =>
     Object.fromEntries(task.subtasks.map((s) => [s.id, s.notes ?? ''])),
   )
 
-  // Sync notes when task prop changes (e.g. after refetch)
-  useEffect(() => {
-    setTaskNotes(task.notes ?? '')
-  }, [task.notes])
-
+  useEffect(() => { setTaskNotes(task.notes ?? '') }, [task.notes])
   useEffect(() => {
     setSubNotes(Object.fromEntries(task.subtasks.map((s) => [s.id, s.notes ?? ''])))
   }, [task.subtasks])
-
-  const subtaskInputRef = useRef<HTMLInputElement>(null)
 
   const doneCount = task.subtasks.filter((s) => s.done).length
   const totalSubs = task.subtasks.length
@@ -54,23 +47,22 @@ export function TaskItem({
     if (!text) return
     onAddSubtask(task.id, text, date)
     setSubtaskInput('')
-    subtaskInputRef.current?.focus()
   }
 
   return (
     <li className="rounded-xl border border-zinc-200 overflow-hidden">
       {/* ── Main task row ── */}
       <div className="group flex items-center gap-3 px-3 py-2.5">
-        <input
-          type="checkbox"
-          checked={task.done}
-          onChange={(e) => onToggle(task.id, e.target.checked)}
-          className="h-5 w-5 shrink-0 cursor-pointer accent-zinc-900"
+        <Checkbox
+          isSelected={task.done}
+          onChange={(isSelected) => onToggle(task.id, isSelected)}
+          aria-label={task.text}
+          className="shrink-0"
         />
 
         <span
           className={
-            'flex-1 text-sm ' + (task.done ? 'line-through text-zinc-400' : 'text-zinc-800')
+            'flex-1 text-sm ' + (task.done ? 'line-through text-muted' : 'text-zinc-800')
           }
         >
           {task.text}
@@ -78,49 +70,51 @@ export function TaskItem({
 
         {/* Subtask count badge */}
         {totalSubs > 0 && (
-          <button
+          <Chip
+            variant="soft"
+            color={doneCount === totalSubs ? 'success' : 'default'}
+            size="sm"
+            className="cursor-pointer"
             onClick={() => setExpanded((e) => !e)}
-            className={
-              'text-xs px-2 py-0.5 rounded-full font-medium transition ' +
-              (doneCount === totalSubs
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-zinc-100 text-zinc-600')
-            }
           >
             {doneCount}/{totalSubs}
-          </button>
+          </Chip>
         )}
 
-        {/* Notes dot — visible when notes exist */}
+        {/* Notes dot — shows when notes exist and panel is closed */}
         {task.notes && !taskNotesOpen && (
           <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" title="Has notes" />
         )}
 
-        {/* Action buttons on hover */}
+        {/* Action buttons — reveal on hover */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-          <button
-            onClick={() => setTaskNotesOpen((o) => !o)}
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={() => setTaskNotesOpen((o) => !o)}
             className={
-              'text-xs px-2 py-1 rounded-lg transition ' +
-              (taskNotesOpen
-                ? 'bg-amber-100 text-amber-700'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600')
+              'text-xs h-auto py-1 ' +
+              (taskNotesOpen ? 'bg-amber-100 text-amber-700' : 'text-muted')
             }
           >
             Notes
-          </button>
-          <button
-            onClick={() => setExpanded((e) => !e)}
-            className="text-xs px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={() => setExpanded((e) => !e)}
+            className="text-xs h-auto py-1 text-muted"
           >
             {expanded ? '↑' : '+'} Sub
-          </button>
-          <button
-            onClick={() => onDelete(task.id)}
-            className="text-xs px-2 py-1 rounded-lg text-red-500 hover:bg-red-50 transition"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onPress={() => onDelete(task.id)}
+            className="text-xs h-auto py-1 text-red-500 hover:bg-red-50"
           >
             ×
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -128,13 +122,14 @@ export function TaskItem({
       {taskNotesOpen && (
         <div className="border-t border-zinc-100 bg-amber-50/50 px-3 py-2.5">
           <p className="text-xs font-medium text-amber-700 mb-1.5">Notes</p>
-          <textarea
-            rows={3}
+          <TextArea
+            aria-label="Task notes"
             value={taskNotes}
-            onChange={(e) => setTaskNotes(e.target.value)}
+            onChange={(v) => setTaskNotes(v)}
             onBlur={() => onUpdateNotes(task.id, taskNotes)}
             placeholder="Add notes for this task…"
-            className="w-full text-sm rounded-lg border border-amber-200 bg-white px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+            rows={3}
+            className="w-full"
           />
         </div>
       )}
@@ -146,65 +141,66 @@ export function TaskItem({
             <ul className="space-y-1 mb-3">
               {task.subtasks.map((sub) => (
                 <li key={sub.id}>
-                  {/* Subtask row */}
                   <div className="group/sub flex items-center gap-2 py-0.5">
-                    <input
-                      type="checkbox"
-                      checked={sub.done}
-                      onChange={(e) => onToggleSubtask(task.id, sub.id, e.target.checked)}
-                      className="h-4 w-4 shrink-0 cursor-pointer accent-zinc-900"
+                    <Checkbox
+                      isSelected={sub.done}
+                      onChange={(isSelected) => onToggleSubtask(task.id, sub.id, isSelected)}
+                      aria-label={sub.text}
+                      size="sm"
+                      className="shrink-0"
                     />
                     <span
                       className={
                         'flex-1 text-sm ' +
-                        (sub.done ? 'line-through text-zinc-400' : 'text-zinc-700')
+                        (sub.done ? 'line-through text-muted' : 'text-zinc-700')
                       }
                     >
                       {sub.text}
                     </span>
 
-                    {/* Notes dot for subtask */}
                     {sub.notes && !subNotesOpen[sub.id] && (
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
                     )}
 
                     <div className="flex items-center gap-1 opacity-0 group-hover/sub:opacity-100 transition">
-                      <button
-                        onClick={() =>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onPress={() =>
                           setSubNotesOpen((prev) => ({ ...prev, [sub.id]: !prev[sub.id] }))
                         }
                         className={
-                          'text-xs px-1.5 py-0.5 rounded-md transition ' +
+                          'text-xs h-auto py-0.5 ' +
                           (subNotesOpen[sub.id]
                             ? 'bg-amber-100 text-amber-700'
-                            : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300')
+                            : 'text-muted')
                         }
                       >
                         Notes
-                      </button>
-                      <button
-                        onClick={() => onDeleteSubtask(task.id, sub.id)}
-                        className="text-xs text-zinc-300 hover:text-red-500 transition"
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onPress={() => onDeleteSubtask(task.id, sub.id)}
+                        className="text-xs h-auto py-0.5 text-zinc-300 hover:text-red-500"
                       >
                         ×
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
-                  {/* Subtask notes panel */}
                   {subNotesOpen[sub.id] && (
                     <div className="ml-6 mt-1 mb-2">
-                      <textarea
-                        rows={2}
+                      <TextArea
+                        aria-label="Subtask notes"
                         value={subNotes[sub.id] ?? ''}
-                        onChange={(e) =>
-                          setSubNotes((prev) => ({ ...prev, [sub.id]: e.target.value }))
-                        }
+                        onChange={(v) => setSubNotes((prev) => ({ ...prev, [sub.id]: v }))}
                         onBlur={() =>
                           onUpdateSubtaskNotes(task.id, sub.id, subNotes[sub.id] ?? '')
                         }
                         placeholder="Add notes for this subtask…"
-                        className="w-full text-sm rounded-lg border border-amber-200 bg-white px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                        rows={2}
+                        className="w-full"
                       />
                     </div>
                   )}
@@ -212,33 +208,29 @@ export function TaskItem({
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-zinc-400 mb-2">No subtasks yet.</p>
+            <p className="text-xs text-muted mb-2">No subtasks yet.</p>
           )}
 
-          {/* Add subtask form */}
-          <form
+          {/* Add subtask */}
+          <Form
             className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault()
               handleAddSubtask()
             }}
           >
-            <input
-              ref={subtaskInputRef}
+            <TextField
+              aria-label="New subtask"
               value={subtaskInput}
+              onChange={setSubtaskInput}
               autoComplete="off"
-              spellCheck={false}
-              onChange={(e) => setSubtaskInput(e.target.value)}
               placeholder="Add a subtask…"
-              className="flex-1 text-sm rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              className="flex-1"
             />
-            <button
-              type="submit"
-              className="text-xs px-3 py-1.5 rounded-lg bg-zinc-900 text-white hover:opacity-90 transition"
-            >
+            <Button type="submit" variant="primary" size="sm">
               Add
-            </button>
-          </form>
+            </Button>
+          </Form>
         </div>
       )}
     </li>
