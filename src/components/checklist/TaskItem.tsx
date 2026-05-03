@@ -253,9 +253,9 @@ export function TaskItem({
         <div className="border-t border-zinc-100 bg-zinc-50/60 px-3 pb-3">
           <ul className="pt-2 space-y-0.5">
             {task.subtasks.map((sub) => (
-              <li key={sub.id} className="group/sub flex items-center gap-2 py-1 pl-4">
-                {/* Subtask checkbox — larger tap area */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center sm:h-5 sm:w-5">
+              <li key={sub.id} className="group/sub flex items-center gap-1.5 py-0.5">
+                {/* Subtask checkbox */}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-6 sm:w-6">
                   <input
                     type="checkbox"
                     checked={sub.done}
@@ -266,18 +266,18 @@ export function TaskItem({
                 </div>
 
                 {sub.done ? (
-                  <span className="flex-1 text-sm line-through text-zinc-400">{sub.text}</span>
+                  <span className="flex-1 min-w-0 text-sm line-through text-zinc-400">{sub.text}</span>
                 ) : (
                   <InlineEdit
                     value={sub.text}
                     onSave={(text) => onUpdateSubtaskText(task.id, sub.id, text)}
-                    className="flex-1 cursor-text text-sm text-zinc-600"
-                    inputClassName="flex-1 min-w-0 rounded-lg border border-zinc-300 px-2 py-1 text-base focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                    className="flex-1 min-w-0 cursor-text text-sm text-zinc-600"
+                    inputClassName="flex-1 min-w-0 rounded-lg border border-zinc-300 px-2 py-1 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300"
                   />
                 )}
 
                 {/* Subtask note icon */}
-                <div className="flex h-9 w-9 items-center justify-center sm:h-5 sm:w-5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-6 sm:w-6">
                   <NotePopover
                     notes={sub.notes ?? ''}
                     onSave={(notes) => onUpdateSubtaskNotes(task.id, sub.id, notes)}
@@ -285,27 +285,17 @@ export function TaskItem({
                   />
                 </div>
 
-                {/* Subtask delete — always visible on mobile, hover on desktop */}
+                {/* Subtask delete */}
                 <button
                   type="button"
                   onClick={() => onDeleteSubtask(task.id, sub.id)}
                   aria-label="Delete subtask"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-300 transition-colors hover:text-red-500 active:bg-red-50 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover/sub:opacity-100"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-300 transition-colors hover:text-red-500 active:bg-red-50 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover/sub:opacity-100"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </li>
@@ -315,29 +305,43 @@ export function TaskItem({
           {/* Add subtask form or button */}
           {addingSubtask ? (
             <Form
-              className="flex gap-2 mt-2 pl-2"
+              className="flex items-center gap-2 mt-3"
               onSubmit={(e) => { e.preventDefault(); handleAddSubtask() }}
             >
-              <input
-                value={subtaskInput}
-                onChange={(e) => setSubtaskInput(e.target.value)}
-                autoFocus
-                autoComplete="off"
-                placeholder="Subtask name…"
-                aria-label="New subtask"
-                onKeyDown={(e) => { if (e.key === 'Escape') cancelAddSubtask() }}
-                className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-zinc-300"
-              />
-              <Button type="submit" variant="primary" size="sm">Add</Button>
-              <Button type="button" variant="ghost" size="sm" onPress={cancelAddSubtask}>
-                Cancel
+              {/* Input + inline X cancel button */}
+              <div className="flex flex-1 items-center rounded-xl border border-zinc-300 bg-white focus-within:ring-2 focus-within:ring-zinc-300 overflow-hidden">
+                <input
+                  value={subtaskInput}
+                  onChange={(e) => setSubtaskInput(e.target.value)}
+                  autoFocus
+                  autoComplete="off"
+                  placeholder="Subtask name…"
+                  aria-label="New subtask"
+                  onKeyDown={(e) => { if (e.key === 'Escape') cancelAddSubtask() }}
+                  className="flex-1 bg-transparent px-3 py-2.5 text-[16px] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={cancelAddSubtask}
+                  aria-label="Cancel"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center text-zinc-400 hover:text-zinc-700 active:text-zinc-900"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+              <Button type="submit" variant="primary" size="sm" className="shrink-0 h-10 px-4">
+                Add
               </Button>
             </Form>
           ) : (
             <button
               type="button"
               onClick={() => setAddingSubtask(true)}
-              className="mt-1.5 ml-2 flex items-center gap-1 py-1.5 text-sm text-zinc-400 hover:text-zinc-600 active:text-zinc-800 transition-colors"
+              className="mt-2 flex items-center gap-1 py-2 px-1 text-sm text-zinc-400 hover:text-zinc-600 active:text-zinc-800 transition-colors"
             >
               <span className="text-base leading-none">+</span> Add subtask
             </button>

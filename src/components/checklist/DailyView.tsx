@@ -51,11 +51,18 @@ export function DailyView({
     setInput('')
   }
 
-  const displayDate = isToday
+  const displayDateLong = isToday
     ? 'Today'
     : new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'long',
+        day: 'numeric',
+      })
+  const displayDateShort = isToday
+    ? 'Today'
+    : new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
         day: 'numeric',
       })
 
@@ -67,7 +74,10 @@ export function DailyView({
           {/* ── Header ── */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold truncate">{displayDate}</h2>
+              <h2 className="text-lg font-semibold">
+              <span className="sm:hidden">{displayDateShort}</span>
+              <span className="hidden sm:inline">{displayDateLong}</span>
+            </h2>
               {total > 0 && (
                 <p className="text-xs text-zinc-400 mt-0.5">{done}/{total} done — {pct}%</p>
               )}
