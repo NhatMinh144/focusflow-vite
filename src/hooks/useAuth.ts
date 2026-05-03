@@ -7,10 +7,23 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    const url = new URL(window.location.href)
+    const code = url.searchParams.get('code')
+
+    if (code) {
+      // Exchange the verification / OAuth code for a real session
+      supabase.auth.exchangeCodeForSession(code).then(({ data }) => {
+        setUser(data.session?.user ?? null)
+        setLoading(false)
+        // Remove the code from the URL so refreshing doesn't re-run the exchange
+        window.history.replaceState({}, '', window.location.pathname)
+      })
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      })
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
