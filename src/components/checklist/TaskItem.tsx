@@ -83,6 +83,7 @@ export function TaskItem({
         {/* Checkbox — nudged down to align with text baseline */}
         <div className="mt-0.5 shrink-0">
           <Checkbox
+            variant="primary"
             isSelected={task.done}
             onChange={(isSelected) => onToggle(task.id, isSelected)}
             aria-label={task.text}
@@ -144,6 +145,7 @@ export function TaskItem({
             {task.subtasks.map((sub) => (
               <li key={sub.id} className="group/sub flex items-center gap-2 pl-6">
                 <Checkbox
+                  variant="primary"
                   isSelected={sub.done}
                   onChange={(isSelected) => onToggleSubtask(task.id, sub.id, isSelected)}
                   aria-label={sub.text}
