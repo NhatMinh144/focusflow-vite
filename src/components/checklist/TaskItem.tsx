@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Button, Checkbox, Chip, Form, TextArea } from '@heroui/react'
+import { useState } from 'react'
+import { Button, Checkbox, Chip, Form } from '@heroui/react'
 import type { Task } from '../../types'
+import { NotePopover } from './NotePopover'
 
 interface Props {
   task: Task
@@ -14,6 +15,26 @@ interface Props {
   onUpdateSubtaskNotes: (taskId: string, subtaskId: string, notes: string) => void
 }
 
+function XIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
 export function TaskItem({
   task,
   date,
@@ -25,211 +46,180 @@ export function TaskItem({
   onUpdateNotes,
   onUpdateSubtaskNotes,
 }: Props) {
-  const [expanded, setExpanded] = useState(false)
+  const [addingSubtask, setAddingSubtask] = useState(false)
   const [subtaskInput, setSubtaskInput] = useState('')
-  const [taskNotesOpen, setTaskNotesOpen] = useState(false)
-  const [taskNotes, setTaskNotes] = useState(task.notes ?? '')
-  const [subNotesOpen, setSubNotesOpen] = useState<Record<string, boolean>>({})
-  const [subNotes, setSubNotes] = useState<Record<string, string>>(() =>
-    Object.fromEntries(task.subtasks.map((s) => [s.id, s.notes ?? ''])),
-  )
-
-  useEffect(() => { setTaskNotes(task.notes ?? '') }, [task.notes])
-  useEffect(() => {
-    setSubNotes(Object.fromEntries(task.subtasks.map((s) => [s.id, s.notes ?? ''])))
-  }, [task.subtasks])
 
   const doneCount = task.subtasks.filter((s) => s.done).length
   const totalSubs = task.subtasks.length
+  const hasSubtaskSection = totalSubs > 0 || addingSubtask
+
+  // Truncate notes to 60 chars for inline preview
+  const notesSnippet =
+    task.notes?.trim().length > 0
+      ? task.notes.trim().length > 60
+        ? task.notes.trim().slice(0, 60) + '…'
+        : task.notes.trim()
+      : null
 
   function handleAddSubtask() {
     const text = subtaskInput.trim()
     if (!text) return
     onAddSubtask(task.id, text, date)
     setSubtaskInput('')
+    setAddingSubtask(false)
+  }
+
+  function cancelAddSubtask() {
+    setAddingSubtask(false)
+    setSubtaskInput('')
   }
 
   return (
-    <li className="rounded-xl border border-zinc-200 overflow-hidden">
+    <li className="group/task rounded-xl border border-zinc-200 bg-white overflow-hidden">
+
       {/* ── Main task row ── */}
-      <div className="group flex items-center gap-3 px-3 py-2.5">
-        <Checkbox
-          isSelected={task.done}
-          onChange={(isSelected) => onToggle(task.id, isSelected)}
-          aria-label={task.text}
-          className="shrink-0"
-        />
+      <div className="flex items-start gap-2.5 px-3 py-3">
 
-        <span
-          className={
-            'flex-1 text-sm ' + (task.done ? 'line-through text-muted' : 'text-zinc-800')
-          }
-        >
-          {task.text}
-        </span>
+        {/* Checkbox — nudged down to align with text baseline */}
+        <div className="mt-0.5 shrink-0">
+          <Checkbox
+            isSelected={task.done}
+            onChange={(isSelected) => onToggle(task.id, isSelected)}
+            aria-label={task.text}
+          />
+        </div>
 
-        {/* Subtask count badge */}
-        {totalSubs > 0 && (
-          <Chip
-            variant="soft"
-            color={doneCount === totalSubs ? 'success' : 'default'}
-            size="sm"
-            className="cursor-pointer"
-            onClick={() => setExpanded((e) => !e)}
+        {/* Task text + notes snippet */}
+        <div className="flex-1 min-w-0">
+          <span
+            className={[
+              'text-base leading-snug',
+              task.done
+                ? 'line-through text-muted font-normal'
+                : 'text-zinc-900 font-semibold',
+            ].join(' ')}
           >
-            {doneCount}/{totalSubs}
-          </Chip>
-        )}
+            {task.text}
+          </span>
+          {notesSnippet && !task.done && (
+            <p className="mt-0.5 text-xs italic text-zinc-400 truncate">{notesSnippet}</p>
+          )}
+        </div>
 
-        {/* Notes dot — shows when notes exist and panel is closed */}
-        {task.notes && !taskNotesOpen && (
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" title="Has notes" />
-        )}
+        {/* Right-side icons */}
+        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+          {/* Subtask count chip — read-only indicator */}
+          {totalSubs > 0 && (
+            <Chip
+              variant="soft"
+              color={doneCount === totalSubs ? 'success' : 'default'}
+              size="sm"
+            >
+              {doneCount}/{totalSubs}
+            </Chip>
+          )}
 
-        {/* Action buttons — reveal on hover */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => setTaskNotesOpen((o) => !o)}
-            className={
-              'text-xs h-auto py-1 ' +
-              (taskNotesOpen ? 'bg-amber-100 text-amber-700' : 'text-muted')
-            }
+          {/* Notes icon — always visible, amber when filled */}
+          <NotePopover
+            notes={task.notes ?? ''}
+            onSave={(notes) => onUpdateNotes(task.id, notes)}
+          />
+
+          {/* Delete icon — visible on row hover */}
+          <button
+            type="button"
+            onClick={() => onDelete(task.id)}
+            aria-label="Delete task"
+            className="flex h-5 w-5 items-center justify-center rounded text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover/task:opacity-100"
           >
-            Notes
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => setExpanded((e) => !e)}
-            className="text-xs h-auto py-1 text-muted"
-          >
-            {expanded ? '↑' : '+'} Sub
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => onDelete(task.id)}
-            className="text-xs h-auto py-1 text-red-500 hover:bg-red-50"
-          >
-            ×
-          </Button>
+            <XIcon size={13} />
+          </button>
         </div>
       </div>
 
-      {/* ── Task notes panel ── */}
-      {taskNotesOpen && (
-        <div className="border-t border-zinc-100 bg-amber-50/50 px-3 py-2.5">
-          <p className="text-xs font-medium text-amber-700 mb-1.5">Notes</p>
-          <TextArea
-            aria-label="Task notes"
-            value={taskNotes}
-            onChange={(e) => setTaskNotes(e.target.value)}
-            onBlur={() => onUpdateNotes(task.id, taskNotes)}
-            placeholder="Add notes for this task…"
-            rows={3}
-            className="w-full"
-          />
+      {/* ── Subtask section (shown when subtasks exist or adding) ── */}
+      {hasSubtaskSection && (
+        <div className="border-t border-zinc-100 bg-zinc-50/60 px-3 pb-3">
+          <ul className="pt-2 space-y-1.5">
+            {task.subtasks.map((sub) => (
+              <li key={sub.id} className="group/sub flex items-center gap-2 pl-6">
+                <Checkbox
+                  isSelected={sub.done}
+                  onChange={(isSelected) => onToggleSubtask(task.id, sub.id, isSelected)}
+                  aria-label={sub.text}
+                />
+                <span
+                  className={[
+                    'flex-1 text-sm min-w-0',
+                    sub.done ? 'line-through text-zinc-400' : 'text-zinc-600',
+                  ].join(' ')}
+                >
+                  {sub.text}
+                </span>
+
+                {/* Subtask note icon */}
+                <NotePopover
+                  notes={sub.notes ?? ''}
+                  onSave={(notes) => onUpdateSubtaskNotes(task.id, sub.id, notes)}
+                  placeholder="Add a note for this subtask…"
+                />
+
+                {/* Subtask delete — visible on subtask row hover */}
+                <button
+                  type="button"
+                  onClick={() => onDeleteSubtask(task.id, sub.id)}
+                  aria-label="Delete subtask"
+                  className="flex h-4 w-4 items-center justify-center rounded text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover/sub:opacity-100"
+                >
+                  <XIcon size={11} />
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Add subtask form or button */}
+          {addingSubtask ? (
+            <Form
+              className="flex gap-2 mt-2.5 pl-6"
+              onSubmit={(e) => { e.preventDefault(); handleAddSubtask() }}
+            >
+              <input
+                value={subtaskInput}
+                onChange={(e) => setSubtaskInput(e.target.value)}
+                autoFocus
+                autoComplete="off"
+                placeholder="Add a subtask…"
+                aria-label="New subtask"
+                onKeyDown={(e) => { if (e.key === 'Escape') cancelAddSubtask() }}
+                className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              />
+              <Button type="submit" variant="primary" size="sm">Add</Button>
+              <Button type="button" variant="ghost" size="sm" onPress={cancelAddSubtask}>
+                Cancel
+              </Button>
+            </Form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddingSubtask(true)}
+              className="mt-2 pl-6 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              + Add subtask
+            </button>
+          )}
         </div>
       )}
 
-      {/* ── Subtask panel ── */}
-      {expanded && (
-        <div className="border-t border-zinc-100 bg-zinc-50 px-4 py-3">
-          {task.subtasks.length > 0 ? (
-            <ul className="space-y-1 mb-3">
-              {task.subtasks.map((sub) => (
-                <li key={sub.id}>
-                  <div className="group/sub flex items-center gap-2 py-0.5">
-                    <Checkbox
-                      isSelected={sub.done}
-                      onChange={(isSelected) => onToggleSubtask(task.id, sub.id, isSelected)}
-                      aria-label={sub.text}
-                      className="shrink-0"
-                    />
-                    <span
-                      className={
-                        'flex-1 text-sm ' +
-                        (sub.done ? 'line-through text-muted' : 'text-zinc-700')
-                      }
-                    >
-                      {sub.text}
-                    </span>
-
-                    {sub.notes && !subNotesOpen[sub.id] && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                    )}
-
-                    <div className="flex items-center gap-1 opacity-0 group-hover/sub:opacity-100 transition">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onPress={() =>
-                          setSubNotesOpen((prev) => ({ ...prev, [sub.id]: !prev[sub.id] }))
-                        }
-                        className={
-                          'text-xs h-auto py-0.5 ' +
-                          (subNotesOpen[sub.id]
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'text-muted')
-                        }
-                      >
-                        Notes
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onPress={() => onDeleteSubtask(task.id, sub.id)}
-                        className="text-xs h-auto py-0.5 text-zinc-300 hover:text-red-500"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  </div>
-
-                  {subNotesOpen[sub.id] && (
-                    <div className="ml-6 mt-1 mb-2">
-                      <TextArea
-                        aria-label="Subtask notes"
-                        value={subNotes[sub.id] ?? ''}
-                        onChange={(e) => setSubNotes((prev) => ({ ...prev, [sub.id]: e.target.value }))}
-                        onBlur={() =>
-                          onUpdateSubtaskNotes(task.id, sub.id, subNotes[sub.id] ?? '')
-                        }
-                        placeholder="Add notes for this subtask…"
-                        rows={2}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-muted mb-2">No subtasks yet.</p>
-          )}
-
-          {/* Add subtask */}
-          <Form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleAddSubtask()
-            }}
+      {/* ── Add subtask prompt when no subtasks yet — reveals on task hover ── */}
+      {!hasSubtaskSection && (
+        <div className="px-3 pb-2 pl-11">
+          <button
+            type="button"
+            onClick={() => setAddingSubtask(true)}
+            className="text-xs text-zinc-300 hover:text-zinc-500 transition-colors opacity-0 group-hover/task:opacity-100"
           >
-            <input
-              aria-label="New subtask"
-              value={subtaskInput}
-              onChange={(e) => setSubtaskInput(e.target.value)}
-              autoComplete="off"
-              placeholder="Add a subtask…"
-              className="flex-1 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
-            />
-            <Button type="submit" variant="primary" size="sm">
-              Add
-            </Button>
-          </Form>
+            + Add subtask
+          </button>
         </div>
       )}
     </li>
