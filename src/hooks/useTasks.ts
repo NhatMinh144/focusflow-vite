@@ -135,6 +135,46 @@ export function useTasks(userId: string) {
     await supabase.from('subtasks').delete().eq('id', subtaskId)
   }, [])
 
+  const updateTaskText = useCallback(async (taskId: string, text: string) => {
+    const prev = tasks.find((t) => t.id === taskId)?.text ?? ''
+    setTasks((ts) => ts.map((t) => (t.id === taskId ? { ...t, text } : t)))
+    const { error } = await supabase.from('tasks').update({ text }).eq('id', taskId)
+    if (error) {
+      // Revert on failure
+      setTasks((ts) => ts.map((t) => (t.id === taskId ? { ...t, text: prev } : t)))
+    }
+  }, [tasks])
+
+  const updateSubtaskText = useCallback(
+    async (taskId: string, subtaskId: string, text: string) => {
+      const prevText =
+        tasks.find((t) => t.id === taskId)?.subtasks.find((s) => s.id === subtaskId)?.text ?? ''
+      setTasks((ts) =>
+        ts.map((t) =>
+          t.id === taskId
+            ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, text } : s)) }
+            : t,
+        ),
+      )
+      const { error } = await supabase.from('subtasks').update({ text }).eq('id', subtaskId)
+      if (error) {
+        setTasks((ts) =>
+          ts.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  subtasks: t.subtasks.map((s) =>
+                    s.id === subtaskId ? { ...s, text: prevText } : s,
+                  ),
+                }
+              : t,
+          ),
+        )
+      }
+    },
+    [tasks],
+  )
+
   const updateTaskNotes = useCallback(async (taskId: string, notes: string) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, notes } : t)))
     await supabase.from('tasks').update({ notes }).eq('id', taskId)
@@ -168,6 +208,8 @@ export function useTasks(userId: string) {
     addSubtask,
     toggleSubtask,
     deleteSubtask,
+    updateTaskText,
+    updateSubtaskText,
     updateTaskNotes,
     updateSubtaskNotes,
     moveTask,

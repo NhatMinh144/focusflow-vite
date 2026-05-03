@@ -13,6 +13,7 @@
     "@floating-ui/react": "^0.27.19",
     "@heroui/react": "^3.0.3",
     "@supabase/supabase-js": "^2.103.3",
+    "lucide-react": "^1.14.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
