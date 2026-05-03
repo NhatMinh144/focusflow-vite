@@ -8,6 +8,15 @@ html, body, #root { height: 100%; }
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+/* Bottom sheet slide-up animation */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 /* Prevent body scroll bounce from showing white gaps behind sticky bar */
 body {
   background-color: #f4f4f5; /* zinc-100 */
