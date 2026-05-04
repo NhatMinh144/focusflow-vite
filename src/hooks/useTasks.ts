@@ -177,7 +177,8 @@ export function useTasks(userId: string) {
 
   const updateTaskNotes = useCallback(async (taskId: string, notes: string) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, notes } : t)))
-    await supabase.from('tasks').update({ notes }).eq('id', taskId)
+    const { error } = await supabase.from('tasks').update({ notes }).eq('id', taskId)
+    if (error) console.error('updateTaskNotes failed:', error.message)
   }, [])
 
   const updateSubtaskNotes = useCallback(
@@ -189,7 +190,8 @@ export function useTasks(userId: string) {
             : t,
         ),
       )
-      await supabase.from('subtasks').update({ notes }).eq('id', subtaskId)
+      const { error } = await supabase.from('subtasks').update({ notes }).eq('id', subtaskId)
+      if (error) console.error('updateSubtaskNotes failed:', error.message)
     },
     [],
   )
