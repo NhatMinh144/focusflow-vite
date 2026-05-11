@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { useTasks } from '../../hooks/useTasks'
-import { useColorCodes } from '../../hooks/useColorCodes'
 import { useDailyNotes } from '../../hooks/useDailyNotes'
 import { DailyView } from './DailyView'
 import { MonthlyView } from './MonthlyView'
-import { SettingsView } from '../settings/SettingsView'
 import { NotesView } from '../notes/NotesView'
 import type { AppView } from '../layout/Header'
+import type { ColorCode } from '../../types'
 
 interface Props {
   user: User
   view: AppView
   setView: (v: AppView) => void
+  colorCodes: ColorCode[]
+  onUpdateColorCode: (id: string, name: string, color: string) => void
 }
 
-export function ChecklistApp({ user, view, setView }: Props) {
+export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCode: _updateCC }: Props) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [noteDate, setNoteDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [calYear, setCalYear] = useState(() => new Date().getFullYear())
@@ -32,7 +33,6 @@ export function ChecklistApp({ user, view, setView }: Props) {
     moveTask, setTaskDateRange, toggleMonthTask,
   } = useTasks(user.id)
 
-  const { colorCodes, addColorCode, updateColorCode, deleteColorCode } = useColorCodes(user.id)
   const { note, noteLoading, noteSaving, fetchNote, saveNoteDebounced } = useDailyNotes(user.id)
 
   useEffect(() => {
@@ -64,6 +64,14 @@ export function ChecklistApp({ user, view, setView }: Props) {
 
   return (
     <main className="mx-auto max-w-5xl px-3 py-4 sm:px-4 md:px-8 md:py-8">
+      {view === 'notes' && (
+        <NotesView
+          date={noteDate} setDate={setNoteDate}
+          note={note} noteLoading={noteLoading} noteSaving={noteSaving}
+          onSave={saveNoteDebounced}
+        />
+      )}
+
       {view === 'daily' && (
         <DailyView
           date={date} setDate={setDate}
@@ -84,23 +92,6 @@ export function ChecklistApp({ user, view, setView }: Props) {
           monthTasks={monthTasks} colorCodes={colorCodes}
           onNavigate={handleNavigate} onSelectDay={handleSelectDay}
           onMoveTask={moveTask} onToggleTask={toggleMonthTask}
-        />
-      )}
-
-      {view === 'notes' && (
-        <NotesView
-          date={noteDate} setDate={setNoteDate}
-          note={note} noteLoading={noteLoading} noteSaving={noteSaving}
-          onSave={saveNoteDebounced}
-        />
-      )}
-
-      {view === 'settings' && (
-        <SettingsView
-          colorCodes={colorCodes}
-          onAdd={addColorCode}
-          onUpdate={updateColorCode}
-          onDelete={deleteColorCode}
         />
       )}
     </main>
