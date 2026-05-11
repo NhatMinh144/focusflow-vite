@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Spinner } from '@heroui/react'
 import { useAuth } from './hooks/useAuth'
 import { AuthScreen } from './components/auth/AuthScreen'
-import { Header } from './components/layout/Header'
+import { Header, type AppView } from './components/layout/Header'
 import { ChecklistApp } from './components/checklist/ChecklistApp'
 
 export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth()
-  const [view, setView] = useState<'daily' | 'monthly'>('daily')
+  const [view, setView] = useState<AppView>('daily')
 
   if (loading) {
     return (

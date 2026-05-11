@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Button, Card } from '@heroui/react'
-import type { MonthTask } from '../../types'
+import type { ColorCode, MonthTask } from '../../types'
 
 interface Props {
   year: number
   month: number
   monthTasks: MonthTask[]
+  colorCodes: ColorCode[]
   onNavigate: (year: number, month: number) => void
   onSelectDay: (date: string) => void
   onMoveTask: (taskId: string, newDate: string) => void
@@ -19,6 +20,7 @@ export function MonthlyView({
   year,
   month,
   monthTasks,
+  colorCodes,
   onNavigate,
   onSelectDay,
   onMoveTask,
@@ -159,33 +161,33 @@ export function MonthlyView({
 
               {/* Desktop: full task pills */}
               <div className="hidden sm:flex flex-col gap-0.5 flex-1">
-                {visibleTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task)}
-                    className={
-                      'group flex items-center gap-1 rounded-md px-1.5 py-0.5 cursor-grab active:cursor-grabbing active:opacity-50 transition-opacity ' +
-                      (task.done ? 'bg-zinc-100' : 'bg-zinc-900')
-                    }
-                  >
-                    <input
-                      type="checkbox"
-                      checked={task.done}
-                      onChange={(e) => { e.stopPropagation(); onToggleTask(task.id, e.target.checked) }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      className="h-2.5 w-2.5 shrink-0 cursor-pointer accent-zinc-500"
-                    />
-                    <span
-                      className={
-                        'text-xs truncate flex-1 ' +
-                        (task.done ? 'line-through text-zinc-400' : 'text-white')
-                      }
+                {visibleTasks.map((task) => {
+                  const cc = colorCodes.find((c) => c.id === task.color_code_id)
+                  const bg = task.done ? '#f4f4f5' : (cc?.color ?? '#18181b')
+                  const textColor = task.done ? '#a1a1aa' : (cc ? '#fff' : '#fff')
+                  return (
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task)}
+                      className="group flex items-center gap-1 rounded-md px-1.5 py-0.5 cursor-grab active:cursor-grabbing active:opacity-50 transition-opacity"
+                      style={{ backgroundColor: bg }}
                     >
-                      {task.text}
-                    </span>
-                  </div>
-                ))}
+                      <input
+                        type="checkbox"
+                        checked={task.done}
+                        onChange={(e) => { e.stopPropagation(); onToggleTask(task.id, e.target.checked) }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="h-2.5 w-2.5 shrink-0 cursor-pointer accent-zinc-500"
+                      />
+                      <span className="text-xs truncate flex-1" style={{ color: textColor,
+                        textDecoration: task.done ? 'line-through' : undefined }}>
+                        {task.text}
+                        {task.date_range_start && task.date_range_end && ' ↔'}
+                      </span>
+                    </div>
+                  )
+                })}
                 {overflow > 0 && (
                   <Button
                     variant="ghost"

@@ -10,10 +10,11 @@ export function useTasks(userId: string) {
 
   const fetchDayTasks = useCallback(async (date: string) => {
     setLoading(true)
+    // Include tasks where the single date matches OR the date falls within a date range
     const { data } = await supabase
       .from('tasks')
       .select('*, subtasks(*)')
-      .eq('date', date)
+      .or(`date.eq.${date},and(date_range_start.lte.${date},date_range_end.gte.${date})`)
       .order('created_at', { ascending: true })
 
     if (data) {
@@ -60,22 +61,64 @@ export function useTasks(userId: string) {
     const start = `${year}-${pad(month)}-01`
     const end = `${year}-${pad(month)}-${pad(new Date(year, month, 0).getDate())}`
 
+    // Include tasks with single date in month OR date range overlapping month
     const { data } = await supabase
       .from('tasks')
-      .select('id, text, date, done')
-      .gte('date', start)
-      .lte('date', end)
+      .select('id, text, date, done, color_code_id, date_range_start, date_range_end')
+      .or(
+        `and(date.gte.${start},date.lte.${end}),and(date_range_start.lte.${end},date_range_end.gte.${start})`,
+      )
       .order('created_at', { ascending: true })
 
     if (data) setMonthTasks(data as MonthTask[])
   }, [])
 
   const moveTask = useCallback(async (taskId: string, newDate: string) => {
+    // Moving clears any existing date range
     setMonthTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, date: newDate } : t)),
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, date: newDate, date_range_start: null, date_range_end: null }
+          : t,
+      ),
     )
-    await supabase.from('tasks').update({ date: newDate }).eq('id', taskId)
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, date: newDate, date_range_start: null, date_range_end: null }
+          : t,
+      ),
+    )
+    await supabase
+      .from('tasks')
+      .update({ date: newDate, date_range_start: null, date_range_end: null })
+      .eq('id', taskId)
   }, [])
+
+  const setTaskDateRange = useCallback(
+    async (taskId: string, startDate: string, endDate: string) => {
+      // The task's `date` is set to the start of the range for backwards compatibility
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, date: startDate, date_range_start: startDate, date_range_end: endDate }
+            : t,
+        ),
+      )
+      setMonthTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, date: startDate, date_range_start: startDate, date_range_end: endDate }
+            : t,
+        ),
+      )
+      await supabase
+        .from('tasks')
+        .update({ date: startDate, date_range_start: startDate, date_range_end: endDate })
+        .eq('id', taskId)
+    },
+    [],
+  )
 
   const toggleMonthTask = useCallback(async (taskId: string, done: boolean) => {
     setMonthTasks((prev) =>
@@ -85,8 +128,14 @@ export function useTasks(userId: string) {
   }, [])
 
   const addTask = useCallback(
-    async (text: string, date: string) => {
-      await supabase.from('tasks').insert({ user_id: userId, text, date, done: false })
+    async (text: string, date: string, colorCodeId?: string | null) => {
+      await supabase.from('tasks').insert({
+        user_id: userId,
+        text,
+        date,
+        done: false,
+        color_code_id: colorCodeId ?? null,
+      })
       await fetchDayTasks(date)
     },
     [userId, fetchDayTasks],
@@ -135,15 +184,15 @@ export function useTasks(userId: string) {
     await supabase.from('subtasks').delete().eq('id', subtaskId)
   }, [])
 
-  const updateTaskText = useCallback(async (taskId: string, text: string) => {
-    const prev = tasks.find((t) => t.id === taskId)?.text ?? ''
-    setTasks((ts) => ts.map((t) => (t.id === taskId ? { ...t, text } : t)))
-    const { error } = await supabase.from('tasks').update({ text }).eq('id', taskId)
-    if (error) {
-      // Revert on failure
-      setTasks((ts) => ts.map((t) => (t.id === taskId ? { ...t, text: prev } : t)))
-    }
-  }, [tasks])
+  const updateTaskText = useCallback(
+    async (taskId: string, text: string) => {
+      const prev = tasks.find((t) => t.id === taskId)?.text ?? ''
+      setTasks((ts) => ts.map((t) => (t.id === taskId ? { ...t, text } : t)))
+      const { error } = await supabase.from('tasks').update({ text }).eq('id', taskId)
+      if (error) setTasks((ts) => ts.map((t) => (t.id === taskId ? { ...t, text: prev } : t)))
+    },
+    [tasks],
+  )
 
   const updateSubtaskText = useCallback(
     async (taskId: string, subtaskId: string, text: string) => {
@@ -177,8 +226,7 @@ export function useTasks(userId: string) {
 
   const updateTaskNotes = useCallback(async (taskId: string, notes: string) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, notes } : t)))
-    const { error } = await supabase.from('tasks').update({ notes }).eq('id', taskId)
-    if (error) console.error('updateTaskNotes failed:', error.message)
+    await supabase.from('tasks').update({ notes }).eq('id', taskId)
   }, [])
 
   const updateSubtaskNotes = useCallback(
@@ -186,12 +234,24 @@ export function useTasks(userId: string) {
       setTasks((prev) =>
         prev.map((t) =>
           t.id === taskId
-            ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, notes } : s)) }
+            ? {
+                ...t,
+                subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, notes } : s)),
+              }
             : t,
         ),
       )
-      const { error } = await supabase.from('subtasks').update({ notes }).eq('id', subtaskId)
-      if (error) console.error('updateSubtaskNotes failed:', error.message)
+      await supabase.from('subtasks').update({ notes }).eq('id', subtaskId)
+    },
+    [],
+  )
+
+  const updateTaskColorCode = useCallback(
+    async (taskId: string, colorCodeId: string | null) => {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, color_code_id: colorCodeId } : t)),
+      )
+      await supabase.from('tasks').update({ color_code_id: colorCodeId }).eq('id', taskId)
     },
     [],
   )
@@ -214,7 +274,9 @@ export function useTasks(userId: string) {
     updateSubtaskText,
     updateTaskNotes,
     updateSubtaskNotes,
+    updateTaskColorCode,
     moveTask,
+    setTaskDateRange,
     toggleMonthTask,
   }
 }
