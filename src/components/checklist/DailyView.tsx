@@ -81,7 +81,10 @@ export function DailyView({
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {!isToday && (
-                <Button variant="ghost" size="sm" onPress={() => setDate(today)}>Today</Button>
+                <button type="button" onClick={() => setDate(today)}
+                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 active:bg-zinc-100 transition-colors">
+                  Today
+                </button>
               )}
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                 className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
