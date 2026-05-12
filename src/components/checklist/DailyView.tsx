@@ -23,13 +23,14 @@ interface Props {
   onSetDateRange: (taskId: string, start: string, end: string) => void
   onUpdateColorCode: (taskId: string, colorCodeId: string | null) => void
   onViewNote: () => void
+  hasNote: boolean
 }
 
 export function DailyView({
   date, setDate, tasks, loading, colorCodes,
   onAddTask, onToggleTask, onDeleteTask, onAddSubtask, onToggleSubtask, onDeleteSubtask,
   onUpdateTaskNotes, onUpdateSubtaskNotes, onUpdateTaskText, onUpdateSubtaskText,
-  onMoveTask, onSetDateRange, onUpdateColorCode, onViewNote,
+  onMoveTask, onSetDateRange, onUpdateColorCode, onViewNote, hasNote,
 }: Props) {
   const [input, setInput] = useState('')
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null)
@@ -97,12 +98,18 @@ export function DailyView({
 
           {/* ── Daily note button ── */}
           <button type="button" onClick={onViewNote}
-            className="mb-4 flex w-full items-center gap-2 rounded-xl border border-dashed border-zinc-200 px-3 py-2.5 text-sm text-zinc-400 hover:border-zinc-300 hover:text-zinc-600 transition-colors">
+            className={[
+              'mb-4 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors',
+              hasNote
+                ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                : 'border-dashed border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-600',
+            ].join(' ')}>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
             </svg>
-            Daily note for this day
+            {hasNote ? 'View daily note ✓' : 'Daily note for this day'}
+            {hasNote && <span className="ml-auto h-2 w-2 rounded-full bg-amber-400 shrink-0" />}
           </button>
 
           {/* ── Add task form (desktop) ── */}

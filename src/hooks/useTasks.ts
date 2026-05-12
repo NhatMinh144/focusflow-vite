@@ -256,6 +256,40 @@ export function useTasks(userId: string) {
     [],
   )
 
+  /**
+   * Move undone single-day tasks from yesterday to today.
+   * Uses localStorage to run at most once per calendar day.
+   */
+  const autoCarryForward = useCallback(
+    async (today: string) => {
+      const storageKey = `ff_carry_${userId}`
+      if (localStorage.getItem(storageKey) === today) return
+
+      const yesterday = new Date(today + 'T00:00:00')
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yStr = yesterday.toISOString().slice(0, 10)
+
+      const { data } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('date', yStr)
+        .eq('done', false)
+        .is('date_range_start', null) // leave recurring/range tasks alone
+
+      if (data && data.length > 0) {
+        await supabase
+          .from('tasks')
+          .update({ date: today })
+          .in('id', data.map((t: { id: string }) => t.id))
+        await fetchDayTasks(today)
+      }
+
+      localStorage.setItem(storageKey, today)
+    },
+    [userId, fetchDayTasks],
+  )
+
   return {
     tasks,
     monthSummary,
@@ -275,6 +309,7 @@ export function useTasks(userId: string) {
     updateTaskNotes,
     updateSubtaskNotes,
     updateTaskColorCode,
+    autoCarryForward,
     moveTask,
     setTaskDateRange,
     toggleMonthTask,

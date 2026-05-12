@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Chip, Form } from '@heroui/react'
 import {
+  FloatingPortal,
   autoUpdate,
   flip,
   offset,
@@ -12,6 +13,20 @@ import {
 } from '@floating-ui/react'
 import type { ColorCode, Task } from '../../types'
 import { NotePopover } from './NotePopover'
+
+// ── Mobile detection ──────────────────────────────────────────
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const handle = (e: MediaQueryListEvent) => setMobile(e.matches)
+    mq.addEventListener('change', handle)
+    return () => mq.removeEventListener('change', handle)
+  }, [])
+  return mobile
+}
 
 interface Props {
   task: Task
@@ -75,16 +90,165 @@ function InlineEdit({
 // ── Three-dot menu with date adjustment ──────────────────────
 type MenuPanel = 'main' | 'move' | 'range' | 'color'
 
-function MoreMenu({
-  task, colorCodes, onDelete, onMoveDate, onSetDateRange, onUpdateColorCode,
-}: {
+interface MoreMenuProps {
   task: Task
   colorCodes: ColorCode[]
   onDelete: () => void
   onMoveDate: (date: string) => void
   onSetDateRange: (start: string, end: string) => void
   onUpdateColorCode: (id: string | null) => void
+}
+
+// Shared three-dot trigger icon
+function ThreeDotIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+      fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+    </svg>
+  )
+}
+
+// Back arrow button used in sub-panels
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </button>
+  )
+}
+
+// Shared panel body — renders whichever panel is active
+function MenuPanelBody({
+  panel, setPanel, task, colorCodes,
+  moveDate, setMoveDate, rangeStart, setRangeStart, rangeEnd, setRangeEnd,
+  onDelete, onMoveDate, onSetDateRange, onUpdateColorCode, close,
+}: {
+  panel: MenuPanel
+  setPanel: (p: MenuPanel) => void
+  task: Task
+  colorCodes: ColorCode[]
+  moveDate: string
+  setMoveDate: (d: string) => void
+  rangeStart: string
+  setRangeStart: (d: string) => void
+  rangeEnd: string
+  setRangeEnd: (d: string) => void
+  onDelete: () => void
+  onMoveDate: (date: string) => void
+  onSetDateRange: (start: string, end: string) => void
+  onUpdateColorCode: (id: string | null) => void
+  close: () => void
 }) {
+  return (
+    <>
+      {/* ── Main panel ── */}
+      {panel === 'main' && (
+        <div className="py-1">
+          <button type="button" onClick={() => setPanel('move')}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100">
+            <span>📅</span> Move to date…
+          </button>
+          <button type="button" onClick={() => setPanel('range')}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100">
+            <span>↔️</span> Set date range…
+          </button>
+          <button type="button" onClick={() => setPanel('color')}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100">
+            <span>🏷️</span> Assign label…
+          </button>
+          <div className="my-1 border-t border-zinc-100" />
+          <button type="button" onClick={() => { close(); onDelete() }}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm font-medium text-red-500 hover:bg-red-50 active:bg-red-100">
+            <span>🗑️</span> Delete task
+          </button>
+        </div>
+      )}
+
+      {/* ── Move to date panel ── */}
+      {panel === 'move' && (
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <BackButton onClick={() => setPanel('main')} />
+            <span className="text-sm font-semibold text-zinc-700">Move to date</span>
+          </div>
+          <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)}
+            className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+          <Button variant="primary" size="sm" isDisabled={!moveDate}
+            onPress={() => { onMoveDate(moveDate); close() }}>
+            Move
+          </Button>
+        </div>
+      )}
+
+      {/* ── Date range panel ── */}
+      {panel === 'range' && (
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <BackButton onClick={() => setPanel('main')} />
+            <span className="text-sm font-semibold text-zinc-700">Set date range</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-zinc-500 font-medium">From</label>
+            <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+            <label className="text-xs text-zinc-500 font-medium">To</label>
+            <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setRangeEnd(e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+          </div>
+          <Button variant="primary" size="sm"
+            isDisabled={!rangeStart || !rangeEnd || rangeEnd < rangeStart}
+            onPress={() => { onSetDateRange(rangeStart, rangeEnd); close() }}>
+            Set range
+          </Button>
+        </div>
+      )}
+
+      {/* ── Color label panel ── */}
+      {panel === 'color' && (
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <BackButton onClick={() => setPanel('main')} />
+            <span className="text-sm font-semibold text-zinc-700">Assign label</span>
+          </div>
+          {colorCodes.length === 0 ? (
+            <p className="text-xs text-zinc-400">No labels yet. Create some in Settings.</p>
+          ) : (
+            <div className="flex flex-col gap-1">
+              <button type="button"
+                onClick={() => { onUpdateColorCode(null); close() }}
+                className={[
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                  task.color_code_id === null ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50 active:bg-zinc-100',
+                ].join(' ')}>
+                <span className="h-4 w-4 rounded-full border-2 border-dashed border-zinc-300 shrink-0" />
+                None
+              </button>
+              {colorCodes.map((cc) => (
+                <button key={cc.id} type="button"
+                  onClick={() => { onUpdateColorCode(cc.id); close() }}
+                  className={[
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                    task.color_code_id === cc.id ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50 active:bg-zinc-100',
+                  ].join(' ')}>
+                  <span className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: cc.color }} />
+                  {cc.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
+// ── Desktop: floating popover ─────────────────────────────────
+function DesktopMoreMenu({ task, colorCodes, onDelete, onMoveDate, onSetDateRange, onUpdateColorCode }: MoreMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [panel, setPanel] = useState<MenuPanel>('main')
   const [moveDate, setMoveDate] = useState(task.date)
@@ -106,128 +270,109 @@ function MoreMenu({
 
   return (
     <>
-      <button
-        ref={refs.setReference}
-        {...getReferenceProps()}
-        type="button"
-        aria-label="More options"
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:text-zinc-700 hover:bg-zinc-100 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover/task:opacity-100"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-          fill="currentColor" aria-hidden="true">
-          <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-        </svg>
+      <button ref={refs.setReference} {...getReferenceProps()}
+        type="button" aria-label="More options"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:text-zinc-700 hover:bg-zinc-100 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover/task:opacity-100">
+        <ThreeDotIcon />
       </button>
 
       {isOpen && (
-        <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}
-          className="z-50 min-w-[200px] rounded-xl border border-zinc-200 bg-white shadow-xl overflow-hidden">
-
-          {/* ── Main panel ── */}
-          {panel === 'main' && (
-            <div className="py-1">
-              <button type="button" onClick={() => setPanel('move')}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100">
-                <span>📅</span> Move to date…
-              </button>
-              <button type="button" onClick={() => setPanel('range')}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100">
-                <span>↔️</span> Set date range…
-              </button>
-              <button type="button" onClick={() => setPanel('color')}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-zinc-700 hover:bg-zinc-50 active:bg-zinc-100">
-                <span>🏷️</span> Assign label…
-              </button>
-              <div className="my-1 border-t border-zinc-100" />
-              <button type="button" onClick={() => { close(); onDelete() }}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-500 hover:bg-red-50 active:bg-red-100">
-                <span>🗑️</span> Delete task
-              </button>
-            </div>
-          )}
-
-          {/* ── Move to date panel ── */}
-          {panel === 'move' && (
-            <div className="p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPanel('main')}
-                  className="text-zinc-400 hover:text-zinc-700">←</button>
-                <span className="text-sm font-semibold text-zinc-700">Move to date</span>
-              </div>
-              <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
-              <Button variant="primary" size="sm" isDisabled={!moveDate}
-                onPress={() => { onMoveDate(moveDate); close() }}>
-                Move
-              </Button>
-            </div>
-          )}
-
-          {/* ── Date range panel ── */}
-          {panel === 'range' && (
-            <div className="p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPanel('main')}
-                  className="text-zinc-400 hover:text-zinc-700">←</button>
-                <span className="text-sm font-semibold text-zinc-700">Set date range</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs text-zinc-500 font-medium">From</label>
-                <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
-                <label className="text-xs text-zinc-500 font-medium">To</label>
-                <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setRangeEnd(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
-              </div>
-              <Button variant="primary" size="sm"
-                isDisabled={!rangeStart || !rangeEnd || rangeEnd < rangeStart}
-                onPress={() => { onSetDateRange(rangeStart, rangeEnd); close() }}>
-                Set range
-              </Button>
-            </div>
-          )}
-
-          {/* ── Color label panel ── */}
-          {panel === 'color' && (
-            <div className="p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPanel('main')}
-                  className="text-zinc-400 hover:text-zinc-700">←</button>
-                <span className="text-sm font-semibold text-zinc-700">Assign label</span>
-              </div>
-              {colorCodes.length === 0 ? (
-                <p className="text-xs text-zinc-400">No labels yet. Create some in Settings.</p>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {/* None option */}
-                  <button type="button"
-                    onClick={() => { onUpdateColorCode(null); close() }}
-                    className={[
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                      task.color_code_id === null ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50',
-                    ].join(' ')}>
-                    <span className="h-4 w-4 rounded-full border-2 border-dashed border-zinc-300" />
-                    None
-                  </button>
-                  {colorCodes.map((cc) => (
-                    <button key={cc.id} type="button"
-                      onClick={() => { onUpdateColorCode(cc.id); close() }}
-                      className={[
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                        task.color_code_id === cc.id ? 'bg-zinc-100 font-semibold' : 'hover:bg-zinc-50',
-                      ].join(' ')}>
-                      <span className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: cc.color }} />
-                      {cc.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <FloatingPortal>
+          <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}
+            className="z-50 min-w-[200px] rounded-xl border border-zinc-200 bg-white shadow-xl overflow-hidden">
+            <MenuPanelBody
+              panel={panel} setPanel={setPanel} task={task} colorCodes={colorCodes}
+              moveDate={moveDate} setMoveDate={setMoveDate}
+              rangeStart={rangeStart} setRangeStart={setRangeStart}
+              rangeEnd={rangeEnd} setRangeEnd={setRangeEnd}
+              onDelete={onDelete} onMoveDate={onMoveDate}
+              onSetDateRange={onSetDateRange} onUpdateColorCode={onUpdateColorCode}
+              close={close}
+            />
+          </div>
+        </FloatingPortal>
       )}
     </>
   )
+}
+
+// ── Mobile: bottom sheet ──────────────────────────────────────
+function MobileMoreMenu({ task, colorCodes, onDelete, onMoveDate, onSetDateRange, onUpdateColorCode }: MoreMenuProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [panel, setPanel] = useState<MenuPanel>('main')
+  const [moveDate, setMoveDate] = useState(task.date)
+  const [rangeStart, setRangeStart] = useState(task.date_range_start ?? task.date)
+  const [rangeEnd, setRangeEnd] = useState(task.date_range_end ?? task.date)
+
+  function open() { setPanel('main'); setIsOpen(true) }
+  function close() { setIsOpen(false); setPanel('main') }
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isOpen])
+
+  return (
+    <>
+      <button type="button" onClick={open} aria-label="More options"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:text-zinc-700 hover:bg-zinc-100">
+        <ThreeDotIcon />
+      </button>
+
+      {isOpen && (
+        <FloatingPortal>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            onClick={close} aria-hidden="true" />
+
+          {/* Bottom sheet */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white shadow-2xl animate-slide-up overflow-hidden">
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="h-1 w-10 rounded-full bg-zinc-200" />
+            </div>
+
+            {/* Sheet header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+              <span className="text-sm font-semibold text-zinc-700">
+                {panel === 'main' ? 'Task options' : panel === 'move' ? 'Move to date' : panel === 'range' ? 'Set date range' : 'Assign label'}
+              </span>
+              <button type="button" onClick={close} aria-label="Close"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <MenuPanelBody
+              panel={panel} setPanel={setPanel} task={task} colorCodes={colorCodes}
+              moveDate={moveDate} setMoveDate={setMoveDate}
+              rangeStart={rangeStart} setRangeStart={setRangeStart}
+              rangeEnd={rangeEnd} setRangeEnd={setRangeEnd}
+              onDelete={onDelete} onMoveDate={onMoveDate}
+              onSetDateRange={onSetDateRange} onUpdateColorCode={onUpdateColorCode}
+              close={close}
+            />
+
+            {/* iOS safe area spacer */}
+            <div style={{ height: 'env(safe-area-inset-bottom)' }} />
+          </div>
+        </FloatingPortal>
+      )}
+    </>
+  )
+}
+
+// ── Public MoreMenu — picks mobile or desktop ─────────────────
+function MoreMenu(props: MoreMenuProps) {
+  const isMobile = useIsMobile()
+  return isMobile ? <MobileMoreMenu {...props} /> : <DesktopMoreMenu {...props} />
 }
 
 // ── Date range badge ──────────────────────────────────────────

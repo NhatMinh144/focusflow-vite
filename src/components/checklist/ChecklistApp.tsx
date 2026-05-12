@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { supabase } from '../../lib/supabase'
 import { useTasks } from '../../hooks/useTasks'
 import { useDailyNotes } from '../../hooks/useDailyNotes'
 import { DailyView } from './DailyView'
@@ -17,10 +18,12 @@ interface Props {
 }
 
 export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCode: _updateCC }: Props) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [noteDate, setNoteDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const today = new Date().toISOString().slice(0, 10)
+  const [date, setDate] = useState(() => today)
+  const [noteDate, setNoteDate] = useState(() => today)
   const [calYear, setCalYear] = useState(() => new Date().getFullYear())
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth() + 1)
+  const [hasNoteForDate, setHasNoteForDate] = useState(false)
 
   const {
     tasks, monthTasks, loading,
@@ -30,14 +33,31 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
     updateTaskText, updateSubtaskText,
     updateTaskNotes, updateSubtaskNotes,
     updateTaskColorCode,
+    autoCarryForward,
     moveTask, setTaskDateRange, toggleMonthTask,
   } = useTasks(user.id)
 
   const { note, noteLoading, noteSaving, fetchNote, saveNoteDebounced } = useDailyNotes(user.id)
 
   useEffect(() => {
-    if (view === 'daily') fetchDayTasks(date)
-  }, [view, date, fetchDayTasks])
+    if (view === 'daily') {
+      // Carry forward undone tasks from yesterday (once per day)
+      if (date === today) autoCarryForward(today)
+      fetchDayTasks(date)
+    }
+  }, [view, date, fetchDayTasks, autoCarryForward, today])
+
+  // Check if a note exists for the current daily-view date
+  useEffect(() => {
+    if (view !== 'daily') return
+    supabase
+      .from('daily_notes')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('date', date)
+      .maybeSingle()
+      .then(({ data }) => setHasNoteForDate(!!data))
+  }, [date, view, user.id])
 
   useEffect(() => {
     if (view === 'monthly') fetchMonthTasks(calYear, calMonth)
@@ -76,6 +96,7 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
         <DailyView
           date={date} setDate={setDate}
           tasks={tasks} loading={loading} colorCodes={colorCodes}
+          hasNote={hasNoteForDate}
           onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask}
           onAddSubtask={addSubtask} onToggleSubtask={toggleSubtask} onDeleteSubtask={deleteSubtask}
           onUpdateTaskNotes={updateTaskNotes} onUpdateSubtaskNotes={updateSubtaskNotes}
