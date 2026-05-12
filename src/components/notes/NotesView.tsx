@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { Button, Card, Spinner } from '@heroui/react'
+import { Card, Spinner } from '@heroui/react'
 import type { DailyNote } from '../../types'
 
 interface Props {
@@ -96,7 +96,10 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
           </div>
           <div className="flex items-center gap-2">
             {date !== today && (
-              <Button variant="ghost" size="sm" onPress={() => setDate(today)}>Today</Button>
+              <button type="button" onClick={() => setDate(today)}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 active:bg-zinc-100 transition-colors">
+                Today
+              </button>
             )}
             <input
               type="date"
