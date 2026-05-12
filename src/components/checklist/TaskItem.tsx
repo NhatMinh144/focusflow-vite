@@ -176,12 +176,11 @@ function MenuPanelBody({
             <BackButton onClick={() => setPanel('main')} />
             <span className="text-sm font-semibold text-zinc-700">Move to date</span>
           </div>
-          <div className="w-full overflow-hidden">
-            <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)}
-              className="block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300" />
-          </div>
-          <Button variant="primary" size="sm" isDisabled={!moveDate}
-            onPress={() => { onMoveDate(moveDate); close() }}>
+          <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)}
+            className="w-full appearance-none rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-3 text-[16px] text-zinc-900 focus:border-zinc-400 focus:bg-white focus:outline-none" />
+          <Button variant="primary" isDisabled={!moveDate}
+            onPress={() => { onMoveDate(moveDate); close() }}
+            className="w-full">
             Move
           </Button>
         </div>
@@ -195,20 +194,17 @@ function MenuPanelBody({
             <span className="text-sm font-semibold text-zinc-700">Set date range</span>
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-zinc-500 font-medium">From</label>
-            <div className="w-full overflow-hidden">
-              <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
-                className="block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300" />
-            </div>
-            <label className="text-xs text-zinc-500 font-medium">To</label>
-            <div className="w-full overflow-hidden">
-              <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setRangeEnd(e.target.value)}
-                className="block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300" />
-            </div>
+            <label className="text-xs font-medium text-zinc-500">From</label>
+            <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
+              className="w-full appearance-none rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-3 text-[16px] text-zinc-900 focus:border-zinc-400 focus:bg-white focus:outline-none" />
+            <label className="text-xs font-medium text-zinc-500">To</label>
+            <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setRangeEnd(e.target.value)}
+              className="w-full appearance-none rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-3 text-[16px] text-zinc-900 focus:border-zinc-400 focus:bg-white focus:outline-none" />
           </div>
-          <Button variant="primary" size="sm"
+          <Button variant="primary"
             isDisabled={!rangeStart || !rangeEnd || rangeEnd < rangeStart}
-            onPress={() => { onSetDateRange(rangeStart, rangeEnd); close() }}>
+            onPress={() => { onSetDateRange(rangeStart, rangeEnd); close() }}
+            className="w-full">
             Set range
           </Button>
         </div>
