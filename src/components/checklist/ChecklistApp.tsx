@@ -47,16 +47,21 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
     }
   }, [view, date, fetchDayTasks, autoCarryForward, today])
 
-  // Check if a note exists for the current daily-view date
+  // Check if a non-empty note exists for the current daily-view date.
+  // Tiptap stores an empty document as "<p></p>", so we strip HTML tags
+  // and check for actual text before showing the amber indicator.
   useEffect(() => {
     if (view !== 'daily') return
     supabase
       .from('daily_notes')
-      .select('id')
+      .select('content')
       .eq('user_id', user.id)
       .eq('date', date)
       .maybeSingle()
-      .then(({ data }) => setHasNoteForDate(!!data))
+      .then(({ data }) => {
+        const hasText = !!(data?.content?.replace(/<[^>]*>/g, '').trim())
+        setHasNoteForDate(hasText)
+      })
   }, [date, view, user.id])
 
   useEffect(() => {
