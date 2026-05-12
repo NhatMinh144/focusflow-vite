@@ -26,7 +26,7 @@ export function useDailyNotes(userId: string) {
   const saveNote = useCallback(
     async (date: string, content: string) => {
       setNoteSaving(true)
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('daily_notes')
         .upsert(
           { user_id: userId, date, content, updated_at: new Date().toISOString() },
@@ -34,6 +34,9 @@ export function useDailyNotes(userId: string) {
         )
         .select()
         .single()
+      if (error) {
+        console.error('[useDailyNotes] save failed:', error.message, error.details)
+      }
       if (data) setNote(data as DailyNote)
       setNoteSaving(false)
     },

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Button, Card, Spinner } from '@heroui/react'
@@ -42,6 +42,13 @@ function ToolbarBtn({
 export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave }: Props) {
   const today = new Date().toISOString().slice(0, 10)
 
+  // Always hold the latest `date` so the stale onUpdate closure uses the right one
+  const dateRef = useRef(date)
+  useEffect(() => { dateRef.current = date }, [date])
+
+  // Suppress saves triggered by programmatic setContent (not user edits)
+  const suppressRef = useRef(false)
+
   const editor = useEditor({
     extensions: [StarterKit],
     content: note?.content ?? '',
@@ -51,17 +58,21 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
       },
     },
     onUpdate: ({ editor }) => {
-      onSave(date, editor.getHTML())
+      if (suppressRef.current) return
+      onSave(dateRef.current, editor.getHTML())
     },
   })
 
-  // Reload editor content when date or note changes
+  // Reload editor content when the fetched note or date changes.
+  // We suppress onUpdate so loading content doesn't fire a redundant save.
   useEffect(() => {
     if (!editor) return
     const incoming = note?.content ?? ''
-    // Only update if content differs (avoids cursor reset on debounced saves)
     if (editor.getHTML() !== incoming) {
+      suppressRef.current = true
       editor.commands.setContent(incoming)
+      // Reset after the synchronous setContent flush completes
+      setTimeout(() => { suppressRef.current = false }, 0)
     }
   }, [note, editor])
 

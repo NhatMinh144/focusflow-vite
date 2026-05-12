@@ -176,8 +176,10 @@ function MenuPanelBody({
             <BackButton onClick={() => setPanel('main')} />
             <span className="text-sm font-semibold text-zinc-700">Move to date</span>
           </div>
-          <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)}
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+          <div className="w-full overflow-hidden">
+            <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)}
+              className="block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+          </div>
           <Button variant="primary" size="sm" isDisabled={!moveDate}
             onPress={() => { onMoveDate(moveDate); close() }}>
             Move
@@ -194,11 +196,15 @@ function MenuPanelBody({
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs text-zinc-500 font-medium">From</label>
-            <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+            <div className="w-full overflow-hidden">
+              <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
+                className="block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+            </div>
             <label className="text-xs text-zinc-500 font-medium">To</label>
-            <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setRangeEnd(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+            <div className="w-full overflow-hidden">
+              <input type="date" value={rangeEnd} min={rangeStart} onChange={(e) => setRangeEnd(e.target.value)}
+                className="block w-full min-w-0 rounded-lg border border-zinc-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-zinc-300" />
+            </div>
           </div>
           <Button variant="primary" size="sm"
             isDisabled={!rangeStart || !rangeEnd || rangeEnd < rangeStart}
@@ -330,19 +336,12 @@ function MobileMoreMenu({ task, colorCodes, onDelete, onMoveDate, onSetDateRange
             onClick={close} aria-hidden="true" />
 
           {/* Bottom sheet */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white shadow-2xl animate-slide-up overflow-hidden">
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white shadow-2xl animate-slide-up">
+            {/* Drag handle row — close button sits here to avoid adding a second title row */}
+            <div className="relative flex justify-center pt-3 pb-1">
               <div className="h-1 w-10 rounded-full bg-zinc-200" />
-            </div>
-
-            {/* Sheet header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
-              <span className="text-sm font-semibold text-zinc-700">
-                {panel === 'main' ? 'Task options' : panel === 'move' ? 'Move to date' : panel === 'range' ? 'Set date range' : 'Assign label'}
-              </span>
               <button type="button" onClick={close} aria-label="Close"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors">
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                   fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -350,6 +349,7 @@ function MobileMoreMenu({ task, colorCodes, onDelete, onMoveDate, onSetDateRange
               </button>
             </div>
 
+            {/* MenuPanelBody owns the panel title + back navigation */}
             <MenuPanelBody
               panel={panel} setPanel={setPanel} task={task} colorCodes={colorCodes}
               moveDate={moveDate} setMoveDate={setMoveDate}
