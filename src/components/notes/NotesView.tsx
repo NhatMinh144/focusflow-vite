@@ -49,6 +49,13 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
   // Suppress saves triggered by programmatic setContent (not user edits)
   const suppressRef = useRef(false)
 
+  // Track noteLoading transitions so we only reload editor content when a
+  // *fetch* completes (navigating to a different date), never when a *save*
+  // response arrives. Without this guard, a slow save response can return
+  // stale content after the user has already typed more, causing setContent
+  // to silently delete characters.
+  const prevLoadingRef = useRef(noteLoading)
+
   const editor = useEditor({
     extensions: [StarterKit],
     content: note?.content ?? '',
@@ -63,18 +70,20 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
     },
   })
 
-  // Reload editor content when the fetched note or date changes.
-  // We suppress onUpdate so loading content doesn't fire a redundant save.
+  // Only reload editor content when noteLoading transitions true → false,
+  // meaning a fresh fetch just completed (e.g. user navigated to a new date).
+  // Ignores setNote calls that come from saveNote DB responses.
   useEffect(() => {
     if (!editor) return
-    const incoming = note?.content ?? ''
-    if (editor.getHTML() !== incoming) {
+    const wasLoading = prevLoadingRef.current
+    prevLoadingRef.current = noteLoading
+    if (wasLoading && !noteLoading) {
+      const incoming = note?.content ?? ''
       suppressRef.current = true
       editor.commands.setContent(incoming)
-      // Reset after the synchronous setContent flush completes
       setTimeout(() => { suppressRef.current = false }, 0)
     }
-  }, [note, editor])
+  }, [noteLoading, note, editor])
 
   const displayDate = date === today
     ? 'Today'

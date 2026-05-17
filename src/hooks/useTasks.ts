@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { startTransition, useCallback, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { MonthTask, Subtask, Task, TaskSummary } from '../types'
 
@@ -225,22 +225,28 @@ export function useTasks(userId: string) {
   )
 
   const updateTaskNotes = useCallback(async (taskId: string, notes: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, notes } : t)))
+    // startTransition marks this re-render as non-urgent so React won't
+    // interrupt the user's active keystroke to process it.
+    startTransition(() => {
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, notes } : t)))
+    })
     await supabase.from('tasks').update({ notes }).eq('id', taskId)
   }, [])
 
   const updateSubtaskNotes = useCallback(
     async (taskId: string, subtaskId: string, notes: string) => {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId
-            ? {
-                ...t,
-                subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, notes } : s)),
-              }
-            : t,
-        ),
-      )
+      startTransition(() => {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === taskId
+              ? {
+                  ...t,
+                  subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, notes } : s)),
+                }
+              : t,
+          ),
+        )
+      })
       await supabase.from('subtasks').update({ notes }).eq('id', subtaskId)
     },
     [],

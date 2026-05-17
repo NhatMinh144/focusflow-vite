@@ -43,19 +43,18 @@ export function useDailyNotes(userId: string) {
     [userId],
   )
 
-  /** Optimistically update local state and debounce the DB write (500ms) */
+  /**
+   * Debounce the DB write without touching React state.
+   * The Tiptap editor owns its own content — mirroring it into React state
+   * on every keystroke causes re-renders that disrupt typing, especially
+   * for IME languages (Vietnamese, Chinese, Japanese, Korean).
+   */
   const saveNoteDebounced = useCallback(
     (date: string, content: string) => {
-      // Update local state immediately so the editor stays responsive
-      setNote((prev) =>
-        prev
-          ? { ...prev, content }
-          : { id: '', user_id: userId, date, content, created_at: '', updated_at: '' },
-      )
       if (debounceRef.current) clearTimeout(debounceRef.current)
-      debounceRef.current = setTimeout(() => saveNote(date, content), 500)
+      debounceRef.current = setTimeout(() => saveNote(date, content), 1000)
     },
-    [userId, saveNote],
+    [saveNote],
   )
 
   return { note, noteLoading, noteSaving, fetchNote, saveNote, saveNoteDebounced }

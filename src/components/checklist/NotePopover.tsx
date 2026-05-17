@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   FloatingFocusManager,
   FloatingPortal,
@@ -347,22 +347,22 @@ function NoteTextarea({
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto'
-      ref.current.style.height = ref.current.scrollHeight + 'px'
-    }
+  // useLayoutEffect fires synchronously after DOM mutations but before the
+  // browser paints — no visible flicker, and only one reflow per render
+  // instead of two (the old pattern set height twice per keystroke).
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
   }, [draft])
 
   return (
     <textarea
       ref={ref}
       value={draft}
-      onChange={(e) => {
-        onChange(e.target.value)
-        e.target.style.height = 'auto'
-        e.target.style.height = e.target.scrollHeight + 'px'
-      }}
+      // Just update state; height is handled by useLayoutEffect after render.
+      onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
       autoFocus={autoFocus}
