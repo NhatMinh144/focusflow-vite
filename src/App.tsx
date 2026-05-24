@@ -8,16 +8,15 @@ import { ChecklistApp } from './components/checklist/ChecklistApp'
 
 export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth()
-  const [view, setView] = useState<AppView>('notes')
+  const [view, setView] = useState<AppView>('planner')
 
-  // Color codes live here so both Header (modal) and ChecklistApp (task UI) share the same data
   const { colorCodes, addColorCode, updateColorCode, deleteColorCode } = useColorCodes(
     user?.id ?? '',
   )
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-100 grid place-items-center">
+      <div className="min-h-screen grid place-items-center" style={{ background: '#f0f4f9' }}>
         <Spinner color="current" />
       </div>
     )
@@ -28,7 +27,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen text-slate-900" style={{ background: '#f0f4f9' }}>
       <Header
         email={user.email ?? ''}
         view={view}

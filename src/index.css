@@ -30,6 +30,6 @@ html, body, #root { height: 100%; }
 
 /* Prevent body scroll bounce from showing white gaps behind sticky bar */
 body {
-  background-color: #f4f4f5; /* zinc-100 */
+  background-color: #f0f4f9;
   overscroll-behavior-y: none;
 }

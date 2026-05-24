@@ -6,7 +6,6 @@ import type { DailyNote } from '../../types'
 
 interface Props {
   date: string
-  setDate: (d: string) => void
   note: DailyNote | null
   noteLoading: boolean
   noteSaving: boolean
@@ -28,10 +27,10 @@ function ToolbarBtn({
       type="button"
       onMouseDown={(e) => { e.preventDefault(); onClick() }}
       className={[
-        'flex h-8 w-8 items-center justify-center rounded text-sm font-semibold transition-colors',
+        'flex h-7 w-7 items-center justify-center rounded text-sm font-semibold transition-colors',
         active
-          ? 'bg-zinc-900 text-white'
-          : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900',
+          ? 'bg-slate-900 text-white'
+          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900',
       ].join(' ')}
     >
       {children}
@@ -39,9 +38,7 @@ function ToolbarBtn({
   )
 }
 
-export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave }: Props) {
-  const today = new Date().toISOString().slice(0, 10)
-
+export function NotesView({ date, note, noteLoading, noteSaving, onSave }: Props) {
   // Always hold the latest `date` so the stale onUpdate closure uses the right one
   const dateRef = useRef(date)
   useEffect(() => { dateRef.current = date }, [date])
@@ -61,7 +58,7 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
     content: note?.content ?? '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] px-1',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[240px] px-1',
       },
     },
     onUpdate: ({ editor }) => {
@@ -85,49 +82,40 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
     }
   }, [noteLoading, note, editor])
 
-  const displayDate = date === today
-    ? 'Today'
-    : new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric',
-      })
+  const displayDate = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
 
   return (
-    <Card className="rounded-2xl shadow-sm">
-      <Card.Content className="p-4 sm:p-6">
+    <Card className="rounded-2xl shadow-sm h-full">
+      <Card.Content className="p-4 sm:p-5 flex flex-col h-full">
 
         {/* ── Header ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-semibold">{displayDate}</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              {noteSaving ? 'Saving…' : note?.updated_at ? 'Auto-saved' : 'Start typing to create a note'}
-            </p>
+            <h2 className="text-base font-semibold text-slate-900">Daily Note</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{displayDate}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {date !== today && (
-              <button type="button" onClick={() => setDate(today)}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 active:bg-zinc-100 transition-colors">
-                Today
-              </button>
+          <div className="text-xs shrink-0">
+            {noteSaving ? (
+              <span className="text-slate-400">Saving…</span>
+            ) : note?.updated_at ? (
+              <span className="text-emerald-500 font-medium">Saved ✓</span>
+            ) : (
+              <span className="text-slate-300">Auto-saves as you type</span>
             )}
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300"
-            />
           </div>
         </div>
 
         {noteLoading ? (
-          <div className="flex justify-center py-16">
+          <div className="flex flex-1 justify-center items-center py-16">
             <Spinner color="current" />
           </div>
         ) : (
-          <>
+          <div className="flex flex-col flex-1 gap-3">
             {/* ── Toolbar ── */}
             {editor && (
-              <div className="mb-3 flex flex-wrap items-center gap-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2 py-1.5">
+              <div className="flex flex-wrap items-center gap-0.5 rounded-xl border border-slate-200 bg-slate-50 px-1.5 py-1">
                 <ToolbarBtn
                   active={editor.isActive('bold')}
                   onClick={() => editor.chain().focus().toggleBold().run()}
@@ -147,7 +135,7 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
                   <s>S</s>
                 </ToolbarBtn>
 
-                <div className="mx-1 h-5 w-px bg-zinc-200" />
+                <div className="mx-1 h-4 w-px bg-slate-200" />
 
                 <ToolbarBtn
                   active={editor.isActive('heading', { level: 2 })}
@@ -174,7 +162,7 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
                   "
                 </ToolbarBtn>
 
-                <div className="mx-1 h-5 w-px bg-zinc-200" />
+                <div className="mx-1 h-4 w-px bg-slate-200" />
 
                 <ToolbarBtn onClick={() => editor.chain().focus().undo().run()}>↩</ToolbarBtn>
                 <ToolbarBtn onClick={() => editor.chain().focus().redo().run()}>↪</ToolbarBtn>
@@ -182,10 +170,11 @@ export function NotesView({ date, setDate, note, noteLoading, noteSaving, onSave
             )}
 
             {/* ── Editor ── */}
-            <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 focus-within:ring-2 focus-within:ring-zinc-300">
+            <div className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 focus-within:ring-2 focus-within:ring-blue-300 transition-shadow cursor-text"
+              onClick={() => editor?.commands.focus()}>
               <EditorContent editor={editor} />
             </div>
-          </>
+          </div>
         )}
       </Card.Content>
     </Card>

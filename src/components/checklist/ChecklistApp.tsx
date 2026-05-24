@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from '../../lib/supabase'
 import { useTasks } from '../../hooks/useTasks'
 import { useDailyNotes } from '../../hooks/useDailyNotes'
 import { DailyView } from './DailyView'
@@ -20,10 +19,8 @@ interface Props {
 export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCode: _updateCC }: Props) {
   const today = new Date().toISOString().slice(0, 10)
   const [date, setDate] = useState(() => today)
-  const [noteDate, setNoteDate] = useState(() => today)
   const [calYear, setCalYear] = useState(() => new Date().getFullYear())
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth() + 1)
-  const [hasNoteForDate, setHasNoteForDate] = useState(false)
 
   const {
     tasks, monthTasks, loading,
@@ -39,42 +36,22 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
 
   const { note, noteLoading, noteSaving, fetchNote, saveNoteDebounced } = useDailyNotes(user.id)
 
+  // Fetch tasks + notes whenever date changes in planner view
   useEffect(() => {
-    if (view === 'daily') {
-      // Carry forward undone tasks from yesterday (once per day)
+    if (view === 'planner') {
       if (date === today) autoCarryForward(today)
       fetchDayTasks(date)
+      fetchNote(date)
     }
-  }, [view, date, fetchDayTasks, autoCarryForward, today])
-
-  // Check if a non-empty note exists for the current daily-view date.
-  // Tiptap stores an empty document as "<p></p>", so we strip HTML tags
-  // and check for actual text before showing the amber indicator.
-  useEffect(() => {
-    if (view !== 'daily') return
-    supabase
-      .from('daily_notes')
-      .select('content')
-      .eq('user_id', user.id)
-      .eq('date', date)
-      .maybeSingle()
-      .then(({ data }) => {
-        const hasText = !!(data?.content?.replace(/<[^>]*>/g, '').trim())
-        setHasNoteForDate(hasText)
-      })
-  }, [date, view, user.id])
+  }, [view, date, fetchDayTasks, fetchNote, autoCarryForward, today])
 
   useEffect(() => {
     if (view === 'monthly') fetchMonthTasks(calYear, calMonth)
   }, [view, calYear, calMonth, fetchMonthTasks])
 
-  useEffect(() => {
-    if (view === 'notes') fetchNote(noteDate)
-  }, [view, noteDate, fetchNote])
-
   function handleSelectDay(selectedDate: string) {
     setDate(selectedDate)
-    setView('daily')
+    setView('planner')
   }
 
   function handleNavigate(y: number, m: number) {
@@ -82,36 +59,8 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
     setCalMonth(m)
   }
 
-  function handleViewNote() {
-    setNoteDate(date)
-    setView('notes')
-  }
-
   return (
-    <main className="mx-auto max-w-5xl px-3 py-4 sm:px-4 md:px-8 md:py-8">
-      {view === 'notes' && (
-        <NotesView
-          date={noteDate} setDate={setNoteDate}
-          note={note} noteLoading={noteLoading} noteSaving={noteSaving}
-          onSave={saveNoteDebounced}
-        />
-      )}
-
-      {view === 'daily' && (
-        <DailyView
-          date={date} setDate={setDate}
-          tasks={tasks} loading={loading} colorCodes={colorCodes}
-          hasNote={hasNoteForDate}
-          onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask}
-          onAddSubtask={addSubtask} onToggleSubtask={toggleSubtask} onDeleteSubtask={deleteSubtask}
-          onUpdateTaskNotes={updateTaskNotes} onUpdateSubtaskNotes={updateSubtaskNotes}
-          onUpdateTaskText={updateTaskText} onUpdateSubtaskText={updateSubtaskText}
-          onMoveTask={moveTask} onSetDateRange={setTaskDateRange}
-          onUpdateColorCode={updateTaskColorCode}
-          onViewNote={handleViewNote}
-        />
-      )}
-
+    <main className="mx-auto max-w-7xl px-3 py-4 sm:px-4 md:px-6 md:py-6">
       {view === 'monthly' && (
         <MonthlyView
           year={calYear} month={calMonth}
@@ -119,6 +68,33 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
           onNavigate={handleNavigate} onSelectDay={handleSelectDay}
           onMoveTask={moveTask} onToggleTask={toggleMonthTask}
         />
+      )}
+
+      {view === 'planner' && (
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+          {/* Left panel — tasks */}
+          <div className="flex-none w-full lg:w-[420px] xl:w-[460px]">
+            <DailyView
+              date={date} setDate={setDate}
+              tasks={tasks} loading={loading} colorCodes={colorCodes}
+              onAddTask={addTask} onToggleTask={toggleTask} onDeleteTask={deleteTask}
+              onAddSubtask={addSubtask} onToggleSubtask={toggleSubtask} onDeleteSubtask={deleteSubtask}
+              onUpdateTaskNotes={updateTaskNotes} onUpdateSubtaskNotes={updateSubtaskNotes}
+              onUpdateTaskText={updateTaskText} onUpdateSubtaskText={updateSubtaskText}
+              onMoveTask={moveTask} onSetDateRange={setTaskDateRange}
+              onUpdateColorCode={updateTaskColorCode}
+            />
+          </div>
+
+          {/* Right panel — daily note */}
+          <div className="flex-1 min-w-0">
+            <NotesView
+              date={date}
+              note={note} noteLoading={noteLoading} noteSaving={noteSaving}
+              onSave={saveNoteDebounced}
+            />
+          </div>
+        </div>
       )}
     </main>
   )
