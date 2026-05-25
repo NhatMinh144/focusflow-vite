@@ -3,11 +3,12 @@ import { Spinner } from '@heroui/react'
 import { useAuth } from './hooks/useAuth'
 import { useColorCodes } from './hooks/useColorCodes'
 import { AuthScreen } from './components/auth/AuthScreen'
+import { ResetPasswordScreen } from './components/auth/ResetPasswordScreen'
 import { Header, type AppView } from './components/layout/Header'
 import { ChecklistApp } from './components/checklist/ChecklistApp'
 
 export default function App() {
-  const { user, loading, signIn, signUp, signOut } = useAuth()
+  const { user, loading, isRecovery, signIn, signUp, signOut, resetPassword, updatePassword } = useAuth()
   const [view, setView] = useState<AppView>('planner')
 
   const { colorCodes, addColorCode, updateColorCode, deleteColorCode } = useColorCodes(
@@ -22,8 +23,13 @@ export default function App() {
     )
   }
 
+  // User clicked the reset-password email link — show the set-new-password form
+  if (user && isRecovery) {
+    return <ResetPasswordScreen onUpdatePassword={updatePassword} />
+  }
+
   if (!user) {
-    return <AuthScreen onSignIn={signIn} onSignUp={signUp} />
+    return <AuthScreen onSignIn={signIn} onSignUp={signUp} onResetPassword={resetPassword} />
   }
 
   return (
