@@ -18,13 +18,16 @@ export function useAuth() {
         setLoading(false)
         // Remove the code from the URL so refreshing doesn't re-run the exchange
         window.history.replaceState({}, '', window.location.pathname)
-      })
+      }).catch(() => setLoading(false))
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
         setUser(session?.user ?? null)
         setLoading(false)
-      })
+      }).catch(() => setLoading(false))
     }
+
+    // Safety net: never spin forever (e.g. Supabase env vars missing in prod)
+    const timeout = setTimeout(() => setLoading(false), 8000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
@@ -32,7 +35,7 @@ export function useAuth() {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') setIsRecovery(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => { subscription.unsubscribe(); clearTimeout(timeout) }
   }, [])
 
   async function signIn(email: string, password: string) {
