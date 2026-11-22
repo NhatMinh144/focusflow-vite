@@ -5,6 +5,7 @@ import { useDailyNotes } from '../../hooks/useDailyNotes'
 import { DailyView } from './DailyView'
 import { MonthlyView } from './MonthlyView'
 import { NotesView } from '../notes/NotesView'
+import { FloatingWidget } from '../widget/FloatingWidget'
 import type { AppView } from '../layout/Header'
 import type { ColorCode } from '../../types'
 
@@ -69,6 +70,8 @@ export function ChecklistApp({ user, view, setView, colorCodes, onUpdateColorCod
           onMoveTask={moveTask} onToggleTask={toggleMonthTask}
         />
       )}
+
+      <FloatingWidget tasks={tasks} date={date} onToggleTask={toggleTask} />
 
       {view === 'planner' && (
         <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
